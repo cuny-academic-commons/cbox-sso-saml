@@ -1,37 +1,37 @@
- # SPS CBOX SSO
+ # CBOX SSO SAML
 
-Add CUNY SSO integration to Commons In A Box
+Add SAML SSO CUNY integration to Commons In A Box
 
 ## Authorization and Authentication
 
-When this plugin is activated, authorization via CUNY SSO is **required** for a user to register.
+When this plugin is activated, authorization via SAML SSO is **required** for a user to register.
 
-The visitor's browser session is redirected to CUNY SSO for authentication. When authentication with CUNY SSO is successful, information about that session is sent back to the Commons In A Box site, and the SSO attributes are checked to determine if the user is authorized to register. If they are, the user can continue with registration.
+The visitor's browser session is redirected to SAML SSO for authentication. When authentication with SAML SSO is successful, information about that session is sent back to the Commons In A Box site, and the SSO attributes are checked to determine if the user is authorized to register. If they are, the user can continue with registration.
 
 ### Paths
 
 The plugin manages the following paths:
 
-* `/sso/login` will initiate alogin request through CUNY SSO.
-* `/sso/verify` handles the SAML response from CUNY SSO.
-* `/sso/logout` will initiate a logout request through CUNY SSO.
+* `/sso/login` will initiate alogin request through SAML.
+* `/sso/verify` handles the SAML response from SAML.
+* `/sso/logout` will initiate a logout request through SAML.
 * `/sso/metadata.xml` provides the SP metadata for the site.
 
 ## Configuration
 
 ### IdP and SP Metadata
 
-The plugin has a default configuration for CUNY SSO identiy provider (IdP) and service provider (SP) metadata.
+The plugin has a default configuration for SAML identiy provider (IdP) and service provider (SP) metadata.
 
 The CUNY SSO IdP configuration was based on [the metadata file provided by CUNY IT](https://ssologin.cuny.edu/idp/metadata/oam-saml-metadata.xml).
 
-Both IdP and SP configurations can be overridden or modified with the `sps_cbox_sso_saml_settings` filter.
+Both IdP and SP configurations can be overridden or modified with the `cbox_sso_saml_saml_settings` filter.
 
 ### SAML Attributes
 
 The plugin manages authorization via the SAML attributes expected by CUNY SPS OpenLab.
 
-The `sps_cbox_sso_can_register` filter can be used to override this behavior based on the available SAML attributes.
+The `cbox_sso_saml_can_register` filter can be used to override this behavior based on the available SAML attributes.
 
 ### Users
 
@@ -49,11 +49,11 @@ A private key and certificate are required for the plugin to sign and verify SAM
 
 ```
 openssl req -new -x509 -key private.key -out certificate.crt -days 3650
-wp option set sps_cbox_sso_x509_certificate $(cat certificate.crt)
-wp option set sps_cbox_sso_private_key $(cat private.key)
+wp option set cbox_sso_saml_x509_certificate $(cat certificate.crt)
+wp option set cbox_sso_saml_private_key $(cat private.key)
 ```
 
-Or, filter the keys with `sps_cbox_sso_private_key` and `sps_cbox_sso_x509_certificate`.
+Or, filter the keys with `cbox_sso_saml_private_key` and `cbox_sso_saml_x509_certificate`.
 
 ## Build and distribution
 

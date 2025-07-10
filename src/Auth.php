@@ -2,12 +2,12 @@
 /**
  * Manage authorization with CUNY SSO.
  *
- * @package sps-cbox-sso
+ * @package cbox-sso-saml
  */
 
-namespace SPS\CBOX\SSO;
+namespace CBOX\SSO\SAML;
 
-use SPS\CBOX\SSO\Config;
+use CBOX\SSO\SAML\Config;
 use OneLogin\Saml2\Auth as SAML2_Auth;
 use WP_User;
 
@@ -34,7 +34,7 @@ class Auth {
 	 *
 	 * @var string
 	 */
-	private $cookie_name = 'sps_cbox_sso_authorization';
+	private $cookie_name = 'cbox_sso_saml_authorization';
 
 	/**
 	 * Provide access to the Saml2 Auth object.
@@ -164,7 +164,7 @@ class Auth {
 		 * @param bool   $can_register Whether the user is authorized to register.
 		 * @param array  $attributes   The SAML attributes for the user.
 		 */
-		return apply_filters( 'sps_cbox_sso_can_register', false, $attributes );
+		return apply_filters( 'cbox_sso_saml_can_register', false, $attributes );
 	}
 
 	/**
@@ -191,7 +191,7 @@ class Auth {
 		// to associate with local WordPress accounts.
 		$emplid = $this->saml()->getNameId();
 
-		if ( defined( 'SPS_CBOX_SSO_DEBUG' ) && SPS_CBOX_SSO_DEBUG ) {
+		if ( defined( 'CBOX_SSO_SAML_DEBUG' ) && CBOX_SSO_SAML_DEBUG ) {
 			$attributes = $this->saml()->getAttributes();
 
 			$debug_id = wp_insert_post(
@@ -203,7 +203,7 @@ class Auth {
 			);
 
 			if ( ! is_wp_error( $debug_id ) ) {
-				update_post_meta( $debug_id, 'sps_cbox_sso_attributes', $attributes );
+				update_post_meta( $debug_id, 'cbox_sso_saml_attributes', $attributes );
 			}
 		}
 

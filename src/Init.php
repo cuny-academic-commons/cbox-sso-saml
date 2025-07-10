@@ -2,10 +2,10 @@
 /**
  * Initialize the plugin.
  *
- * @package sps-cbox-sso
+ * @package cbox-sso-saml
  */
 
-namespace SPS\CBOX\SSO;
+namespace CBOX\SSO\SAML;
 
 /**
  * Initialize the plugin.
@@ -25,7 +25,7 @@ class Init {
 		add_filter( 'login_url', array( __CLASS__, 'filter_login_url' ) );
 		add_filter( 'logout_url', array( __CLASS__, 'filter_logout_url' ) );
 
-		add_filter( 'sps_cbox_sso_can_register', array( __CLASS__, 'sps_user_can_register' ), 10, 2 );
+		add_filter( 'cbox_sso_saml_can_register', array( __CLASS__, 'sps_user_can_register' ), 10, 2 );
 
 		add_action( 'edit_user_profile', array( __CLASS__, 'add_user_meta_field' ) );
 		add_action( 'edit_user_profile_update', array( __CLASS__, 'save_user_meta_field' ) );
@@ -36,7 +36,7 @@ class Init {
 		add_action( 'bp_before_sidebar_login_form', array( __CLASS__, 'filter_bp_before_sidebar_login_form' ) );
 		add_action( 'wp_footer', array( __CLASS__, 'remove_login_handler' ) );
 
-		if ( defined( 'SPS_CBOX_SSO_DEBUG' ) && SPS_CBOX_SSO_DEBUG ) {
+		if ( defined( 'CBOX_SSO_SAML_DEBUG' ) && CBOX_SSO_SAML_DEBUG ) {
 			add_action( 'init', array( __CLASS__, 'setup_debug' ) );
 		}
 	}
@@ -294,7 +294,7 @@ class Init {
 	 * Filter whether a user can register based on their SPS attributes.
 	 *
 	 * This code is specific to CUNY SPS and likely does not apply to other
-	 * uses of this plugin. See the `sps_cbox_sso_can_register` filter to
+	 * uses of this plugin. See the `cbox_sso_saml_can_register` filter to
 	 * customize this behavior.
 	 *
 	 * @param bool   $can_register Whether the user can register.

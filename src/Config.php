@@ -2,10 +2,10 @@
 /**
  * Configuration settings for the OneLogin Saml2 library.
  *
- * @package sps-cbox-sso
+ * @package cbox-sso-saml
  */
 
-namespace SPS\CBOX\SSO;
+namespace CBOX\SSO\SAML;
 
 /**
  * Configuration settings for the OneLogin Saml2 library.
@@ -45,8 +45,8 @@ class Config {
 	 * @return string
 	 */
 	public static function get_x509_certificate(): string {
-		$x509_cert = get_option( 'sps_cbox_sso_x509_certificate', '' );
-		$x509_cert = apply_filters( 'sps_cbox_sso_x509_certificate', $x509_cert );
+		$x509_cert = get_option( 'cbox_sso_saml_x509_certificate', '' );
+		$x509_cert = apply_filters( 'cbox_sso_saml_x509_certificate', $x509_cert );
 		$x509_cert = str_replace( array( "\n", "\r" ), '', $x509_cert );
 
 		return (string) $x509_cert;
@@ -58,8 +58,8 @@ class Config {
 	 * @return string
 	 */
 	public static function get_private_key(): string {
-		$private_key = get_option( 'sps_cbox_sso_private_key', '' );
-		$private_key = apply_filters( 'sps_cbox_sso_private_key', $private_key );
+		$private_key = get_option( 'cbox_sso_saml_private_key', '' );
+		$private_key = apply_filters( 'cbox_sso_saml_private_key', $private_key );
 		$private_key = str_replace( array( "\n", "\r" ), '', $private_key );
 
 		return (string) $private_key;
@@ -124,6 +124,6 @@ class Config {
 		 *
 		 * @param array $settings SAML settings.
 		 */
-		return apply_filters( 'sps_cbox_sso_saml_settings', $settings );
+		return apply_filters( 'cbox_sso_saml_saml_settings', $settings );
 	}
 }

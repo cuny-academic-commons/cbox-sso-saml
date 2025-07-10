@@ -1,12 +1,12 @@
 <?php
 /**
- * Plugin Name:  SPS CBOX SSO
- * Description:  Add CUNY SSO integration to Commons In A Box
- * Version:      0.2.2
- * Plugin URI:   https://github.com/cuny-academic-commons/sps-cbox-sso
+ * Plugin Name:  CBOX SSO SAML
+ * Description:  Add SAML SSO integration to Commons In A Box
+ * Version:      0.1
+ * Plugin URI:   https://github.com/cuny-academic-commons/cbox-sso-saml
  * Author:       CUNY Academic Commons
  * Author URI:   https://commons.gc.cuny.edu
- * Text Domain:  sps-cbox-sso
+ * Text Domain:  cbox-sso-saml
  * Requires PHP: 7.4
  *
  * This program is free software; you can redistribute it and/or modify
@@ -19,10 +19,10 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
- * @package sps-cbox-sso
+ * @package cbox-sso-saml
  */
 
-namespace SPS\CBOX\SSO;
+namespace CBOX\SSO\SAML;
 
 // If this file is called directly, abort.
 if ( ! defined( 'WPINC' ) ) {
