@@ -16,7 +16,7 @@
 	},
 	"autoload": {
 		"psr-4": {
-			"SPS\\CBOX\\SSO\\": "src/"
+			"CBOX\\SSO\\SAML\\": "src/"
 		}
 	},
 	"config": {
