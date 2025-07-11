@@ -11,6 +11,14 @@ namespace CBOX\SSO\SAML;
  * Configuration settings for the OneLogin Saml2 library.
  */
 class Config {
+	/**
+	 * Provide the entity ID for this client.
+	 *
+	 * @return string
+	 */
+	public static function entity_id(): string {
+		return get_home_url();
+	}
 
 	/**
 	 * Provide the URL a user will visit to initiate SSO authentication.
@@ -83,7 +91,7 @@ class Config {
 			 * This is the configuration for the site the plugin is active on.
 			 */
 			'sp'      => array(
-				'entityId'                 => get_home_url(),
+				'entityId'                 => self::entity_id(),
 				'assertionConsumerService' => array(
 					'url'     => self::verification_url(),
 					'binding' => 'urn:oasis:names:tc:SAML:2.0:bindings:HTTP-POST',

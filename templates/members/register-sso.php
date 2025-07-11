@@ -2,7 +2,7 @@
 /**
  * Registration template for authorized SSO users.
  *
- * @package sps-cbox-sso
+ * @package cbox-sso-saml
  */
 
 ?>

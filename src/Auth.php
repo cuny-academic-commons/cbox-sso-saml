@@ -1,6 +1,6 @@
 <?php
 /**
- * Manage authorization with CUNY SSO.
+ * Manage authorization with SSO.
  *
  * @package cbox-sso-saml
  */
@@ -12,7 +12,7 @@ use OneLogin\Saml2\Auth as SAML2_Auth;
 use WP_User;
 
 /**
- * Manage authorization with CUNY SSO.
+ * Manage authorization with SSO.
  */
 class Auth {
 	/**
@@ -27,7 +27,7 @@ class Auth {
 	 *
 	 * @var string
 	 */
-	private $signup_prefix = 'spssso';
+	private $signup_prefix = 'cbox_sso_saml_';
 
 	/**
 	 * The name of the cookie used to store SSO authorization.
@@ -82,8 +82,7 @@ class Auth {
 	}
 
 	/**
-	 * Check if the visiting user is authorized to register
-	 * via CUNY SSO.
+	 * Check if the visiting user is authorized to register via SSO.
 	 *
 	 * @return bool
 	 */
@@ -138,12 +137,12 @@ class Auth {
 			'<p>%s</p><p><a href="%s">%s</a></p>',
 			esc_html( $error ),
 			esc_url( Config::logout_url() ),
-			esc_html__( 'Log out of CUNY SSO connection.', 'sps-cbox-sso' )
+			esc_html__( 'Log out of SSO connection.', 'cbox-saml-sso' )
 		);
 
 		wp_die(
 			$message, // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
-			esc_html__( 'Error authorizing with CUNY SSO', 'sps-cbox-sso' ),
+			esc_html__( 'Error authorizing with SSO', 'cbox-saml-sso' ),
 			array(
 				'response' => $response, // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
 			)
@@ -159,7 +158,7 @@ class Auth {
 		$attributes = $this->saml()->getAttributes();
 
 		/**
-		 * Filter whether a user is authorized to register via CUNY SSO.
+		 * Filter whether a user is authorized to register via SSO.
 		 *
 		 * @param bool   $can_register Whether the user is authorized to register.
 		 * @param array  $attributes   The SAML attributes for the user.
@@ -198,7 +197,7 @@ class Auth {
 				array(
 					'post_title'  => sanitize_text_field( $emplid ) . ' SSO Authorization attempt ' . gmdate( 'Y-m-d H:i:s' ),
 					'post_status' => 'publish',
-					'post_type'   => 'sps-cbox-sso-debug',
+					'post_type'   => 'cbox-sso-saml-debug',
 				)
 			);
 
@@ -249,7 +248,7 @@ class Auth {
 	}
 
 	/**
-	 * Set a cookie when a user is authorized to register via CUNY SSO.
+	 * Set a cookie when a user is authorized to register via SSO.
 	 *
 	 * @param string $username The username of the user.
 	 * @param string $fragment A secret salt to use in cookie generation.
@@ -273,7 +272,7 @@ class Auth {
 	}
 
 	/**
-	 * Set a cookie when a user has registered and authenticated via CUNY SSO.
+	 * Set a cookie when a user has registered and authenticated via SSO.
 	 *
 	 * @param WP_User $user The user for whom to set an authentication cookie.
 	 */

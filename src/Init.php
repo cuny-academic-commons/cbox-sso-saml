@@ -46,7 +46,9 @@ class Init {
 	 * service provider metadata endpoints.
 	 */
 	public static function template_redirect(): void {
-		$path = wp_parse_url( $_SERVER['REQUEST_URI'], PHP_URL_PATH );
+		$current_url = trailingslashit( set_url_scheme( 'https://' . $_SERVER['HTTP_HOST'] . wp_unslash( $_SERVER['REQUEST_URI'] ) ) );
+
+		$path = str_replace( home_url(), '', $current_url );
 		$path = $path ? untrailingslashit( $path ) : '';
 
 		if ( '/sso/login' === $path ) {
@@ -350,8 +352,8 @@ class Init {
 			}
 		</style>
 
-		<p><a class="btn btn-default btn-primary link-btn semibold" href="<?php echo esc_url( Config::login_url() ); ?>"><?php esc_html_e( 'Login with CUNY Login', 'sps-cbox-sso' ); ?></a></p>
-		<p><a href="<?php echo esc_url( $non_sso_login_url ); ?>"><?php esc_html_e( 'Login with username and password', 'sps-cbox-sso' ); ?></a></p>
+		<p><a class="btn btn-default btn-primary link-btn semibold" href="<?php echo esc_url( Config::login_url() ); ?>"><?php esc_html_e( 'Login with CUNY Login', 'cbox-sso-saml' ); ?></a></p>
+		<p><a href="<?php echo esc_url( $non_sso_login_url ); ?>"><?php esc_html_e( 'Login with username and password', 'cbox-sso-saml' ); ?></a></p>
 		<?php
 	}
 
@@ -370,20 +372,20 @@ class Init {
 
 		wp_nonce_field( 'cuny_sso_allow_wp_login', 'cuny_sso_allow_wp_login_nonce' );
 		?>
-		<h2><?php esc_html_e( 'CUNY SSO Configuration', 'sps-cbox-sso' ); ?></h2>
+		<h2><?php esc_html_e( 'CUNY SSO Configuration', 'cbox-sso-saml' ); ?></h2>
 
 		<table class="form-table" role="presentation">
 			<tr>
-				<th><label for="sps-can-use-wp-auth"><?php esc_html_e( 'Allow WP auth', 'sps-cbox-sso' ); ?></label></th>
+				<th><label for="sps-can-use-wp-auth"><?php esc_html_e( 'Allow WP auth', 'cbox-sso-saml' ); ?></label></th>
 				<td>
 					<select name="sps-can-use-wp-auth" id="sps-can-use-wp-auth">
-						<option value="no" <?php selected( $allow_wp_login, 'no' ); ?>><?php esc_html_e( 'No', 'sps-cbox-sso' ); ?></option>
-						<option value="yes" <?php selected( $allow_wp_login, 'yes' ); ?>><?php esc_html_e( 'Yes', 'sps-cbox-sso' ); ?></option>
+						<option value="no" <?php selected( $allow_wp_login, 'no' ); ?>><?php esc_html_e( 'No', 'cbox-sso-saml' ); ?></option>
+						<option value="yes" <?php selected( $allow_wp_login, 'yes' ); ?>><?php esc_html_e( 'Yes', 'cbox-sso-saml' ); ?></option>
 					</select>
 				</td>
 			</tr>
 			<tr>
-				<th><label for="sps-cuny-emplid"><?php esc_html_e( 'CUNY SSO Emplid', 'sps-cbox-sso' ); ?></label></th>
+				<th><label for="sps-cuny-emplid"><?php esc_html_e( 'CUNY SSO Emplid', 'cbox-sso-saml' ); ?></label></th>
 				<td>
 					<input name="sps-cuny-emplid" type="text" value="<?php echo esc_attr( $emplid ); ?>" />
 				</td>
@@ -447,7 +449,7 @@ class Init {
 	 */
 	public static function setup_debug(): void {
 		register_post_type(
-			'sps-cbox-sso-debug',
+			'cbox-sso-saml-debug',
 			array(
 				'public'             => true,
 				'publicly_queryable' => false,
