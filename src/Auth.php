@@ -163,7 +163,7 @@ class Auth {
 		 * @param bool   $can_register Whether the user is authorized to register.
 		 * @param array  $attributes   The SAML attributes for the user.
 		 */
-		return apply_filters( 'cbox_sso_saml_can_register', false, $attributes );
+		return apply_filters( 'cbox_sso_saml_can_register', true, $attributes );
 	}
 
 	/**

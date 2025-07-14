@@ -25,8 +25,6 @@ class Init {
 		add_filter( 'login_url', array( __CLASS__, 'filter_login_url' ) );
 		add_filter( 'logout_url', array( __CLASS__, 'filter_logout_url' ) );
 
-		add_filter( 'cbox_sso_saml_can_register', array( __CLASS__, 'sps_user_can_register' ), 10, 2 );
-
 		add_action( 'edit_user_profile', array( __CLASS__, 'add_user_meta_field' ) );
 		add_action( 'edit_user_profile_update', array( __CLASS__, 'save_user_meta_field' ) );
 
@@ -290,45 +288,6 @@ class Init {
 		}
 
 		return false;
-	}
-
-	/**
-	 * Filter whether a user can register based on their SPS attributes.
-	 *
-	 * This code is specific to CUNY SPS and likely does not apply to other
-	 * uses of this plugin. See the `cbox_sso_saml_can_register` filter to
-	 * customize this behavior.
-	 *
-	 * @param bool   $can_register Whether the user can register.
-	 * @param string $attributes   The available SAML attributes.
-	 * @return bool Whether the user can register.
-	 */
-	public static function sps_user_can_register( $can_register, $attributes ): bool {
-		if ( isset( $attributes['SPS-Stu'] ) ) {
-			$student = $attributes['SPS-Stu'][0];
-		} else {
-			$student = '';
-		}
-
-		if ( isset( $attributes['SPS-Emp'] ) ) {
-			$employee = $attributes['SPS-Emp'][0];
-		} else {
-			$employee = '';
-		}
-
-		if ( isset( $attributes['primaryAffiliation'] ) ) {
-			$primary_affiliation = $attributes['primaryAffiliation'][0];
-		} else {
-			$primary_affiliation = '';
-		}
-
-		// If the user has an SPS specific employee or student attribute, or if they have
-		// a primary affiliation with SPS01, they are authorized to register.
-		if ( '' !== $employee || '' !== $student || 'SPS01' === $primary_affiliation ) {
-			$can_register = true;
-		}
-
-		return $can_register;
 	}
 
 	/**
