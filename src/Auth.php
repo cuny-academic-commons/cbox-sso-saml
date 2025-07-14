@@ -267,8 +267,7 @@ class Auth {
 
 		$cookie_value = $username . '|' . $expiration . '|' . $token . '|' . $hash;
 
-		setcookie( $this->cookie_name, $cookie_value, $expiration, PLUGINS_COOKIE_PATH, COOKIE_DOMAIN, true, true );
-		setcookie( $this->cookie_name, $cookie_value, $expiration, ADMIN_COOKIE_PATH, COOKIE_DOMAIN, true, true );
+		setcookie( $this->cookie_name, $cookie_value, $expiration, COOKIEPATH, COOKIE_DOMAIN, true, true );
 	}
 
 	/**
