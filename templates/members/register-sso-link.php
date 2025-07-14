@@ -5,7 +5,7 @@
  * @package cbox-sso-saml
  */
 
-use SPS\CBOX\SSO\Config;
+use CBOX\SSO\SAML\Config;
 
 ?>
 <div class="col-sm-18">
