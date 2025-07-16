@@ -186,16 +186,14 @@ class Auth {
 			$this->handle_error( 'User is not authenticated.', 403 );
 		}
 
-		// CUNY IT passes EMPLID as the NameID. We use this as the key
-		// to associate with local WordPress accounts.
-		$emplid = $this->saml()->getNameId();
+		$user_identifier = $this->get_user_identifier();
 
 		if ( defined( 'CBOX_SSO_SAML_DEBUG' ) && CBOX_SSO_SAML_DEBUG ) {
 			$attributes = $this->saml()->getAttributes();
 
 			$debug_id = wp_insert_post(
 				array(
-					'post_title'  => sanitize_text_field( $emplid ) . ' SSO Authorization attempt ' . gmdate( 'Y-m-d H:i:s' ),
+					'post_title'  => sanitize_text_field( $user_identifier ) . ' SSO Authorization attempt ' . gmdate( 'Y-m-d H:i:s' ),
 					'post_status' => 'publish',
 					'post_type'   => 'cbox-sso-saml-debug',
 				)
@@ -210,11 +208,29 @@ class Auth {
 			$this->handle_error( 'User is not authorized to register.', 403 );
 		}
 
-		$user = $this->get_user( $emplid );
+		$user = $this->get_user( $user_identifier );
 
 		if ( ! $user ) {
-			$username = $this->signup_prefix . $emplid;
-			$fragment = $this->create_temp_signup( $emplid );
+			/**
+			 * Filters the user data for a new user being signed up via SSO.
+			 *
+			 * @param array              $signup_user_data The user data for the new user.
+			 * @param string             $user_identifier  The user identifier.
+			 * @param CBOX\SSO\SAML\Auth $this             The Auth instance.
+			 */
+			$signup_user_data = apply_filters(
+				'cbox_sso_saml_signup_user_data',
+				array(
+					'user_login' => sanitize_user( $user_identifier ),
+					'user_email' => $user_identifier . '@example.com', // Placeholder email.
+					'meta'       => array(),
+				),
+				$user_identifier,
+				$this
+			);
+
+			$username = $this->signup_prefix . $signup_user_data['user_login'];
+			$fragment = $this->create_temp_signup( $signup_user_data );
 		} else {
 			$username = $user->user_login;
 			$fragment = substr( $user->user_pass, 8, 4 );
@@ -280,16 +296,34 @@ class Auth {
 	}
 
 	/**
-	 * Get a user by their CUNY EMPLID.
+	 * Get the user identifier from the SSO response.
 	 *
-	 * @param string $emplid The CUNY EMPLID.
+	 * @return string The user identifier (EMPLID).
+	 */
+	private function get_user_identifier(): string {
+		// Default to getNameId().
+		$user_identifier = $this->saml()->getNameId();
+
+		/**
+		 * Filters the user identifier from the SSO response.
+		 *
+		 * @param string $user_identifier The user identifier.
+		 * @param SAML2_Auth $saml The SAML2 Auth object.
+		 */
+		return apply_filters( 'cbox_sso_saml_user_identifier', $user_identifier, $this->saml() );
+	}
+
+	/**
+	 * Get a user by the user identifier provided by SAML SSO.
+	 *
+	 * @param string $user_identifier User identifier.
 	 * @return WP_User|false A matching user, or false if none found.
 	 */
-	private function get_user( string $emplid ) {
+	private function get_user( string $user_identifier ) {
 		$users = get_users(
 			array(
-				'meta_key'   => 'cuny_sso_emplid',
-				'meta_value' => $emplid,
+				'meta_key'   => 'cbox_sso_saml_user_identifier',
+				'meta_value' => $user_identifier,
 			)
 		);
 
@@ -304,21 +338,23 @@ class Auth {
 	 * Provide a placeholder signup record for a user who is authorized via
 	 * SSO, but not yet fully registered on the site.
 	 *
-	 * If the passed EMPLID has already been registered, return the existing
-	 * activation key.
+	 * If the passed user identifier has already been registered, return the
+	 * existing activation key.
 	 *
 	 * This allows us to generate a secure authorization cookie by using much
 	 * of WordPress core's built-in logic and the user account's password as a
 	 * secret key.
 	 *
 	 * Once registration is complete, this signup record will be removed and
-	 * the user's associated CUNY EMPLID will be stored as a full user's meta.
+	 * the user's associated user identifier will be stored as a full user's meta.
 	 *
-	 * @param string $emplid The CUNY EMPLID.
+	 * @param array $signup_data The signup data, including 'user_login', 'user_email', 'meta'.
 	 * @return string The activation key.
 	 */
-	private function create_temp_signup( string $emplid ): string {
-		$signup       = $this->get_temp_signup( $emplid );
+	private function create_temp_signup( $signup_data ): string {
+		$user_login = $signup_data['user_login'] ?? '';
+
+		$signup       = $this->get_temp_signup( $user_login );
 		$existing_key = $signup ? $signup->activation_key : '';
 
 		if ( $existing_key ) {
@@ -328,20 +364,25 @@ class Auth {
 		// Do not send an email for this signup.
 		remove_action( 'after_signup_user', 'wpmu_signup_user_notification' );
 
-		$sso_id = wp_generate_uuid4();
+		$signup_identifier = $this->signup_prefix . $user_login;
+
+		$meta = array_merge(
+			$signup_data['meta'] ?? array(),
+			array(
+				'user_email' => $signup_data['user_email'] ?? '',
+			)
+		);
 
 		wpmu_signup_user(
-			$this->signup_prefix . $emplid,
-			$emplid . '@example.com',
-			array(
-				'cuny_sso_initial' => $sso_id,
-			)
+			$signup_identifier,
+			$signup_identifier . '@example.com', // Placeholder email.
+			$meta,
 		);
 
 		// Restore the email notification.
 		add_action( 'after_signup_user', 'wpmu_signup_user_notification', 10, 4 );
 
-		$signup = $this->get_temp_signup( $emplid );
+		$signup = $this->get_temp_signup( $user_login );
 
 		return $signup ? $signup->activation_key : '';
 	}
@@ -349,16 +390,16 @@ class Auth {
 	/**
 	 * Retrieve the activation key for a temporary signup record.
 	 *
-	 * @param string $emplid The CUNY EMPLID.
+	 * @param string $user_identifier The user identifier.
 	 * @return stdClass|false The signup record. False if none found.
 	 */
-	public function get_temp_signup( string $emplid ) {
+	public function get_temp_signup( string $user_identifier ) {
 		global $wpdb;
 
-		if ( 0 !== strpos( $emplid, $this->signup_prefix ) ) {
-			$username = $this->signup_prefix . $emplid;
+		if ( 0 !== strpos( $user_identifier, $this->signup_prefix ) ) {
+			$username = $this->signup_prefix . $user_identifier;
 		} else {
-			$username = $emplid;
+			$username = $user_identifier;
 		}
 
 		$signups = $wpdb->get_results(

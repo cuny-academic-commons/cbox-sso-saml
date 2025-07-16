@@ -191,14 +191,14 @@ class Init {
 			array( 'activation_key' => $signup->activation_key )
 		);
 
-		$emplid = str_replace( $auth->get_signup_prefix(), '', $signup->user_login );
+		$user_identifier = str_replace( $auth->get_signup_prefix(), '', $signup->user_login );
 
 		// The CUNY SSO EMPLID is used to match SSO users with WP users.
-		update_user_meta( $user->ID, 'cuny_sso_emplid', $emplid );
+		update_user_meta( $user->ID, 'cbox_sso_saml_user_identifier', $user_identifier );
 
 		// CUNY SSO email and original signup ID are stored for debugging.
-		update_user_meta( $user->ID, 'cuny_sso_email', $signup->user_email );
-		update_user_meta( $user->ID, 'cuny_sso_signup_id', $signup->signup_id );
+		update_user_meta( $user->ID, 'cbox_sso_saml_email', $signup->user_email );
+		update_user_meta( $user->ID, 'cbox_sso_saml_signup_id', $signup->signup_id );
 
 		$auth->set_sso_authentication_cookie( $user );
 
@@ -270,10 +270,10 @@ class Init {
 	 * @return bool Whether the user is allowed to login with WordPress.
 	 */
 	public static function user_can_use_wp_auth( $user_id ): bool {
-		$emplid = get_user_meta( $user_id, 'cuny_sso_emplid', true );
+		$user_identifier = get_user_meta( $user_id, 'cbox_sso_saml_user_identifier', true );
 
 		// This user has already authenticated with CUNY SSO.
-		if ( $emplid ) {
+		if ( $user_identifier ) {
 			return false;
 		}
 
