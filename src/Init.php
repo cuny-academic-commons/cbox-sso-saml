@@ -81,7 +81,8 @@ class Init {
 				wp_safe_redirect( $redirect_to );
 				exit;
 			} else {
-				$auth->saml()->logout();
+				$current_url = trailingslashit( set_url_scheme( 'https://' . $_SERVER['HTTP_HOST'] . wp_unslash( $_SERVER['REQUEST_URI'] ) ) );
+				$auth->saml()->logout( home_url( '/sso/logout?redirect_to=' . rawurlencode( $current_url ) ) );
 				exit;
 			}
 		}
