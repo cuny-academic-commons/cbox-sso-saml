@@ -48,6 +48,7 @@ class Init {
 
 		$path = str_replace( home_url(), '', $current_url );
 		$path = $path ? untrailingslashit( $path ) : '';
+		$path = strtok( $path, '?' );
 
 		if ( '/sso/login' === $path ) {
 			$auth = new Auth();
