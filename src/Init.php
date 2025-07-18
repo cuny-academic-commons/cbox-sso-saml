@@ -31,7 +31,6 @@ class Init {
 		add_filter( 'allow_password_reset', array( __CLASS__, 'filter_show_password_fields' ), 10, 2 );
 		add_filter( 'show_password_fields', array( __CLASS__, 'filter_show_password_fields' ), 10, 2 );
 
-		add_action( 'bp_before_sidebar_login_form', array( __CLASS__, 'filter_bp_before_sidebar_login_form' ) );
 		add_action( 'wp_footer', array( __CLASS__, 'remove_login_handler' ) );
 
 		if ( defined( 'CBOX_SSO_SAML_DEBUG' ) && CBOX_SSO_SAML_DEBUG ) {
@@ -290,32 +289,6 @@ class Init {
 		}
 
 		return false;
-	}
-
-	/**
-	 * Filter the BuddyPress login form on the home page to provide a link
-	 * to SSO authentication.
-	 *
-	 * @return void
-	 */
-	public static function filter_bp_before_sidebar_login_form(): void {
-
-		// Temporarily remove the login URL filter so that we can capture the
-		// non-SSO login URL.
-		remove_filter( 'login_url', array( __CLASS__, 'filter_login_url' ) );
-		$non_sso_login_url = wp_login_url();
-		add_filter( 'login_url', array( __CLASS__, 'filter_login_url' ) );
-
-		?>
-		<style>
-			#user-login form {
-				display: none;
-			}
-		</style>
-
-		<p><a class="btn btn-default btn-primary link-btn semibold" href="<?php echo esc_url( Config::login_url() ); ?>"><?php esc_html_e( 'Login with CUNY Login', 'cbox-sso-saml' ); ?></a></p>
-		<p><a href="<?php echo esc_url( $non_sso_login_url ); ?>"><?php esc_html_e( 'Login with username and password', 'cbox-sso-saml' ); ?></a></p>
-		<?php
 	}
 
 	/**
