@@ -424,13 +424,11 @@ class Init {
 	public static function filter_show_password_fields( $show_password_fields, $profileuser ): bool {
 		$allow_wp_login = get_user_meta( $profileuser->ID, 'cbox_sso_saml_allow_wp_login', true );
 
-		// If the user is allowed to login with WordPress and no other code
-		// has already filtered this to false, show the password fields.
-		if ( 'yes' === $allow_wp_login && $show_password_fields ) {
+		if ( 'yes' === $allow_wp_login ) {
 			return true;
 		}
 
-		return $show_password_fields;
+		return false;
 	}
 
 	/**
