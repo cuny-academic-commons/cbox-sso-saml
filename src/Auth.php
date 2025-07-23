@@ -78,7 +78,18 @@ class Auth {
 			return array();
 		}
 
-		return explode( '|', $cookie );
+		$cookie_data = explode( '|', $cookie );
+
+		if ( 4 !== count( $cookie_data ) ) {
+			return array();
+		}
+
+		return array(
+			'username'   => $cookie_data[0] ?? '',
+			'expiration' => $cookie_data[1] ?? '',
+			'token'      => $cookie_data[2] ?? '',
+			'hash'       => $cookie_data[3] ?? '',
+		);
 	}
 
 	/**
@@ -95,16 +106,16 @@ class Auth {
 
 		list( $username, $expiration, $token, $hash ) = $cookie_data;
 
-		if ( ! $username ) {
+		if ( ! $cookie_data['username'] ) {
 			return false;
 		}
 
-		$user = $this->get_user( $username );
+		$user = $this->get_user( $cookie_data['username'] );
 
 		if ( $user ) {
 			$fragment = substr( $user->user_pass, 8, 4 );
 		} else {
-			$signup   = $this->get_temp_signup( $username );
+			$signup   = $this->get_temp_signup( $cookie_data['username'] );
 			$fragment = $signup ? $signup->activation_key : '';
 		}
 
@@ -113,11 +124,11 @@ class Auth {
 			return false;
 		}
 
-		$key = wp_hash( $username . '|' . $fragment . '|' . $expiration . '|' . $token, 'auth' );
+		$key = wp_hash( $cookie_data['username'] . '|' . $fragment . '|' . $cookie_data['expiration'] . '|' . $cookie_data['token'], 'auth' );
 
-		$hash_expected = hash_hmac( 'sha256', $username . '|' . $expiration . '|' . $token, $key );
+		$hash_expected = hash_hmac( 'sha256', $cookie_data['username'] . '|' . $cookie_data['expiration'] . '|' . $cookie_data['token'], $key );
 
-		if ( ! hash_equals( $hash, $hash_expected ) ) {
+		if ( ! hash_equals( $cookie_data['hash'], $hash_expected ) ) {
 			$this->clear_sso_authorization_cookie();
 			return false;
 		}

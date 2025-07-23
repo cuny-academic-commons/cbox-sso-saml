@@ -175,7 +175,7 @@ class Init {
 
 		$cookie_data = $auth->get_cookie_data();
 
-		if ( 4 !== count( $cookie_data ) ) {
+		if ( empty( $cookie_data['username'] ) ) {
 			$auth->handle_error( 'Invalid cookie data.' );
 		}
 
