@@ -424,6 +424,14 @@ class Auth {
 			return false;
 		}
 
-		return $signups[0];
+		$signup = $signups[0];
+
+		if ( isset( $signup->meta ) && is_serialized( $signup->meta ) ) {
+			$signup->meta = maybe_unserialize( $signup->meta );
+		} else {
+			$signup->meta = array();
+		}
+
+		return $signup;
 	}
 }
