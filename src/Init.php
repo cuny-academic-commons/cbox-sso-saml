@@ -20,6 +20,7 @@ class Init {
 		add_filter( 'bp_get_template_stack', array( __CLASS__, 'filter_template_stack' ) );
 		add_action( 'bp_signup_validate', array( __CLASS__, 'bp_signup_validate' ) );
 		add_filter( 'bp_registration_needs_activation', '__return_false' );
+		add_action( 'login_init', array( __CLASS__, 'redirect_wp_login' ) );
 		add_action( 'login_form_login', array( __CLASS__, 'redirect_wp_login_attempts' ) );
 		add_filter( 'bp_get_signup_page', array( __CLASS__, 'filter_signup_url' ) );
 		add_filter( 'login_url', array( __CLASS__, 'filter_login_url' ) );
@@ -295,6 +296,20 @@ class Init {
 		}
 
 		return Config::logout_url();
+	}
+
+	/**
+	 * Redirect attempts to access wp-login.php.
+	 *
+	 * Appending the ?normal query parameter will allow access. This
+	 * is necessary in particular for users who have the ability to use
+	 * local WP login.
+	 */
+	public static function redirect_wp_login(): void {
+		if ( ! isset( $_GET['normal'] ) ) { // phpcs:ignore WordPress.Security.NonceVerification.Recommended
+			wp_safe_redirect( Config::login_url() );
+			exit;
+		}
 	}
 
 	/**
