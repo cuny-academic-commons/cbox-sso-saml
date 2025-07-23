@@ -306,6 +306,11 @@ class Init {
 	 * local WP login.
 	 */
 	public static function redirect_wp_login(): void {
+		// POSTs are handled by the `redirect_wp_login_attempts` method.
+		if ( 'POST' === $_SERVER['REQUEST_METHOD'] ) {
+			return;
+		}
+
 		if ( ! isset( $_GET['normal'] ) ) { // phpcs:ignore WordPress.Security.NonceVerification.Recommended
 			wp_safe_redirect( Config::login_url() );
 			exit;
