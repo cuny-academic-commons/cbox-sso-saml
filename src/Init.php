@@ -102,29 +102,46 @@ class Init {
 	}
 
 	/**
-	 * Filter the template part used for the registration form if the user
-	 * has not authenticated with SSO.
+	 * Template part filters.
+	 *
+	 * This plugin provides a few overrides of BP- and CBOX-default template
+	 * parts. The overrides use the '-sso' suffix so that they take precedence
+	 * over the default templates, while still allowing them to be overridden
+	 * from themes.
 	 *
 	 * @param array  $templates Array of templates located.
 	 * @param string $slug      Template part slug requested.
 	 * @return string[] Array of templates located.
 	 */
 	public static function filter_template_part( $templates, $slug ): array {
-		if ( 'members/register' !== $slug ) {
-			return $templates;
-		}
+		switch ( $slug ) {
+			case 'members/register':
+				$auth = new Auth();
 
-		$auth = new Auth();
+				if ( false === $auth->is_sso_authorized() ) {
+					wp_dequeue_script( 'openlab-registration' );
+					return array(
+						'members/register-sso-link.php',
+					);
+				}
 
-		if ( false === $auth->is_sso_authorized() ) {
-			wp_dequeue_script( 'openlab-registration' );
-			return array(
-				'members/register-sso-link.php',
-			);
-		} else {
-			return array(
-				'members/register-sso.php',
-			);
+				break;
+
+			case 'members/register-parts/email':
+				if ( Config::force_saml_email_address() ) {
+					return array(
+						'members/register-parts/email-sso.php',
+						'members/register-parts/email.php',
+					);
+				}
+
+				break;
+
+			case 'members/register-parts/password':
+				return array(
+					'members/register-parts/password-sso.php',
+					'members/register-parts/password',
+				);
 		}
 
 		return $templates;
@@ -149,10 +166,17 @@ class Init {
 	public static function bp_signup_validate(): void {
 		$bp = buddypress();
 
-		// Prevent BuddyPress from validating the password field, which
-		// we are not capturing during SSO-authorized registration.
-		if ( ! empty( $bp->signup->errors ) && array_key_exists( 'signup_password', $bp->signup->errors ) ) {
-			unset( $bp->signup->errors['signup_password'] );
+		if ( ! empty( $bp->signup->errors ) ) {
+			// Prevent BuddyPress from validating the password field.
+			// Password is not used for SSO users.
+			if ( array_key_exists( 'signup_password', $bp->signup->errors ) ) {
+				unset( $bp->signup->errors['signup_password'] );
+			}
+
+			// Prevent BuddyPress from validating the email field.
+			if ( Config::force_saml_email_address() && array_key_exists( 'signup_email', $bp->signup->errors ) ) {
+				unset( $bp->signup->errors['signup_email'] );
+			}
 		}
 
 		add_action( 'after_signup_user', array( __CLASS__, 'after_signup_user' ), 10, 3 );
@@ -168,9 +192,6 @@ class Init {
 	public static function after_signup_user( $username, $user_email, $key ): void {
 		global $wpdb;
 
-		$user = wpmu_activate_signup( $key );
-		$user = new \WP_User( $user['user_id'] );
-
 		$auth = new Auth();
 
 		$cookie_data = $auth->get_cookie_data();
@@ -179,27 +200,39 @@ class Init {
 			$auth->handle_error( 'Invalid cookie data.' );
 		}
 
-		list( $username ) = $cookie_data;
+		$username = $cookie_data['username'];
 
-		$signup = $auth->get_temp_signup( $username );
+		$temp_signup = $auth->get_temp_signup( $username );
+		if ( ! $temp_signup ) {
+			$auth->handle_error( 'No signup found for this user.' );
+		}
 
-		$wpdb->update(
+		if ( Config::force_saml_email_address() ) {
+			// If the SSO email address is being used, we don't need to validate the email.
+			// The email address will be set by the SSO response.
+			$wpdb->update(
+				$wpdb->signups,
+				array( 'user_email' => $user_email ),
+				array( 'activation_key' => $key )
+			);
+		}
+
+		$user = wpmu_activate_signup( $key );
+		$user = new \WP_User( $user['user_id'] );
+
+		$wpdb->delete(
 			$wpdb->signups,
-			array(
-				'active'    => 1,
-				'activated' => current_time( 'mysql', true ),
-			),
-			array( 'activation_key' => $signup->activation_key )
+			array( 'activation_key' => $temp_signup->activation_key )
 		);
 
-		$user_identifier = str_replace( $auth->get_signup_prefix(), '', $signup->user_login );
+		$user_identifier = str_replace( $auth->get_signup_prefix(), '', $temp_signup->user_login );
 
 		// The CUNY SSO EMPLID is used to match SSO users with WP users.
 		update_user_meta( $user->ID, 'cbox_sso_saml_user_identifier', $user_identifier );
 
 		// CUNY SSO email and original signup ID are stored for debugging.
-		update_user_meta( $user->ID, 'cbox_sso_saml_email', $signup->user_email );
-		update_user_meta( $user->ID, 'cbox_sso_saml_signup_id', $signup->signup_id );
+		update_user_meta( $user->ID, 'cbox_sso_saml_email', $temp_signup->user_email );
+		update_user_meta( $user->ID, 'cbox_sso_saml_signup_id', $temp_signup->signup_id );
 
 		$auth->set_sso_authentication_cookie( $user );
 

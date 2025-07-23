@@ -48,6 +48,20 @@ class Config {
 	}
 
 	/**
+	 * Determines whether to force the use of email address as returned by SAML.
+	 *
+	 * When true, the email address fields will not be shown during registration,
+	 * and will be hidden from the user profile.
+	 *
+	 * @return bool
+	 */
+	public static function force_saml_email_address(): bool {
+		$saved = get_option( 'cbox_sso_saml_force_saml_email_address', '1' );
+
+		return apply_filters( 'cbox_sso_saml_force_saml_email_address', (bool) $saved );
+	}
+
+	/**
 	 * Provide the X.509 certificate used to verify SAML responses.
 	 *
 	 * @return string
