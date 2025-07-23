@@ -409,4 +409,20 @@ class Init {
 		</script>
 		<?php
 	}
+
+	/**
+	 * Gets the signup associated with the current cookie data.
+	 *
+	 * @return object|null The signup object if found, null otherwise.
+	 */
+	public static function get_temp_signup(): ?object {
+		$auth        = new Auth();
+		$cookie_data = $auth->get_cookie_data();
+
+		if ( empty( $cookie_data['username'] ) ) {
+			return null;
+		}
+
+		return $auth->get_temp_signup( $cookie_data['username'] );
+	}
 }
