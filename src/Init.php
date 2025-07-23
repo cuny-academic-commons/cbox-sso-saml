@@ -34,6 +34,9 @@ class Init {
 
 		add_action( 'wp_footer', array( __CLASS__, 'remove_login_handler' ) );
 
+		add_action( 'wp_enqueue_scripts', array( __CLASS__, 'enqueue_assets' ) );
+		add_action( 'admin_enqueue_scripts', array( __CLASS__, 'enqueue_admin_assets' ) );
+
 		if ( defined( 'CBOX_SSO_SAML_DEBUG' ) && CBOX_SSO_SAML_DEBUG ) {
 			add_action( 'init', array( __CLASS__, 'setup_debug' ) );
 		}
@@ -477,5 +480,68 @@ class Init {
 		}
 
 		return $auth->get_temp_signup( $cookie_data['username'] );
+	}
+
+	/**
+	 * Enqueue frontend assets for the plugin.
+	 */
+	public static function enqueue_assets(): void {
+		wp_register_script(
+			'cbox-sso-saml',
+			plugins_url( 'assets/js/cbox-sso-saml.js', __DIR__ ),
+			array(),
+			filemtime( plugin_dir_path( __DIR__ ) . 'assets/js/cbox-sso-saml.js' ),
+			true
+		);
+
+		$allow_email_change = ! Config::force_saml_email_address() || self::user_can_use_wp_auth( get_current_user_id() );
+
+		wp_add_inline_script(
+			'cbox-sso-saml',
+			'var CBOXSSOSAML = ' . wp_json_encode(
+				array(
+					'allowEmailChange' => $allow_email_change,
+				)
+			),
+			'before'
+		);
+
+		if ( bp_is_settings_component() ) {
+			wp_enqueue_script( 'cbox-sso-saml' );
+		}
+	}
+
+	/**
+	 * Enqueue admin assets for the plugin.
+	 */
+	public static function enqueue_admin_assets(): void {
+		global $pagenow;
+
+		wp_register_script(
+			'cbox-sso-saml-admin',
+			plugins_url( 'assets/js/cbox-sso-saml-admin.js', __DIR__ ),
+			array(),
+			filemtime( plugin_dir_path( __DIR__ ) . 'assets/js/cbox-sso-saml-admin.js' ),
+			true
+		);
+
+		$allow_email_change = ! Config::force_saml_email_address() || self::user_can_use_wp_auth( get_current_user_id() );
+
+		$email_field_description = ! $allow_email_change ? __( 'This email address is managed by the SSO provider and cannot be changed.', 'cbox-sso-saml' ) : '';
+
+		wp_add_inline_script(
+			'cbox-sso-saml-admin',
+			'var CBOXSSOSAMLAdmin = ' . wp_json_encode(
+				array(
+					'allowEmailChange'      => $allow_email_change,
+					'emailFieldDescription' => $email_field_description,
+				)
+			),
+			'before'
+		);
+
+		if ( 'profile.php' === $pagenow || 'user-edit.php' === $pagenow ) {
+			wp_enqueue_script( 'cbox-sso-saml-admin' );
+		}
 	}
 }
