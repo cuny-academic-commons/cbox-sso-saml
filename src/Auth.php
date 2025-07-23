@@ -338,11 +338,15 @@ class Auth {
 			)
 		);
 
-		if ( empty( $users ) ) {
-			return false;
-		}
+		$user = ! empty( $users ) ? $users[0] : false;
 
-		return $users[0];
+		/**
+		 * Filters the WP user object retrieved by the SAML user identifier.
+		 *
+		 * @param WP_User|false $user The user object, or false if none found.
+		 * @param string        $user_identifier The user identifier used to retrieve the user.
+		 */
+		return apply_filters( 'cbox_sso_saml_get_user', $user, $user_identifier );
 	}
 
 	/**
