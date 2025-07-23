@@ -228,10 +228,10 @@ class Init {
 
 		$user_identifier = str_replace( $auth->get_signup_prefix(), '', $temp_signup->user_login );
 
-		// The CUNY SSO EMPLID is used to match SSO users with WP users.
+		// Used to match SSO users with WP users.
 		update_user_meta( $user->ID, 'cbox_sso_saml_user_identifier', $user_identifier );
 
-		// CUNY SSO email and original signup ID are stored for debugging.
+		// Email and original signup ID are stored for debugging.
 		update_user_meta( $user->ID, 'cbox_sso_saml_email', $temp_signup->user_email );
 		update_user_meta( $user->ID, 'cbox_sso_saml_signup_id', $temp_signup->signup_id );
 
@@ -326,16 +326,16 @@ class Init {
 	public static function user_can_use_wp_auth( $user_id ): bool {
 		$user_identifier = get_user_meta( $user_id, 'cbox_sso_saml_user_identifier', true );
 
-		// This user has already authenticated with CUNY SSO.
+		// This user has already authenticated with SSO.
 		if ( $user_identifier ) {
 			return false;
 		}
 
 		// Is this specific user allowed to login with WordPress?
-		$user_allow_wp_login = get_user_meta( $user_id, 'cuny_sso_allow_wp_login', true );
+		$user_allow_wp_login = get_user_meta( $user_id, 'cbox_sso_saml_allow_wp_login', true );
 
 		// Are all non-SSO users allowed to login with WordPress?
-		$site_allow_wp_login = get_option( 'cuny_sso_allow_wp_login', 'no' );
+		$site_allow_wp_login = get_option( 'cbox_sso_saml_allow_wp_login', 'no' );
 
 		if ( $user_allow_wp_login || 'yes' === $site_allow_wp_login ) {
 			return true;
@@ -345,36 +345,38 @@ class Init {
 	}
 
 	/**
-	 * Add information about a user's CUNY SSO connection to the user profile
+	 * Add information about a user's SSO connection to the user profile
 	 * when edited by an administrator.
 	 *
 	 * @param \WP_User $profile_user The user being edited.
 	 */
 	public static function add_user_meta_field( $profile_user ): void {
-		$allow_wp_login = get_user_meta( $profile_user->ID, 'cuny_sso_allow_wp_login', true );
+		$allow_wp_login = get_user_meta( $profile_user->ID, 'cbox_sso_saml_allow_wp_login', true );
 		$allow_wp_login = $allow_wp_login ? $allow_wp_login : 'no';
 
-		$emplid = get_user_meta( $profile_user->ID, 'cuny_sso_emplid', true );
-		$emplid = $emplid ? $emplid : '';
+		$user_identifier = get_user_meta( $profile_user->ID, 'cbox_sso_saml_user_identifier', true );
 
-		wp_nonce_field( 'cuny_sso_allow_wp_login', 'cuny_sso_allow_wp_login_nonce' );
+		wp_nonce_field( 'cbox_sso_saml_allow_wp_login', 'cbox_sso_saml_allow_wp_login_nonce' );
 		?>
-		<h2><?php esc_html_e( 'CUNY SSO Configuration', 'cbox-sso-saml' ); ?></h2>
+		<h2><?php esc_html_e( 'CBOX SSO Configuration', 'cbox-sso-saml' ); ?></h2>
 
 		<table class="form-table" role="presentation">
 			<tr>
-				<th><label for="sps-can-use-wp-auth"><?php esc_html_e( 'Allow WP auth', 'cbox-sso-saml' ); ?></label></th>
+				<th><label for="cbox-sso-can-use-wp-auth"><?php esc_html_e( 'Allow WP auth', 'cbox-sso-saml' ); ?></label></th>
 				<td>
-					<select name="sps-can-use-wp-auth" id="sps-can-use-wp-auth">
+					<select name="cbox-sso-can-use-wp-auth" id="cbox-sso-can-use-wp-auth">
 						<option value="no" <?php selected( $allow_wp_login, 'no' ); ?>><?php esc_html_e( 'No', 'cbox-sso-saml' ); ?></option>
 						<option value="yes" <?php selected( $allow_wp_login, 'yes' ); ?>><?php esc_html_e( 'Yes', 'cbox-sso-saml' ); ?></option>
 					</select>
 				</td>
 			</tr>
 			<tr>
-				<th><label for="sps-cuny-emplid"><?php esc_html_e( 'CUNY SSO Emplid', 'cbox-sso-saml' ); ?></label></th>
+				<th><label for="cbox-sso-user-identifier"><?php esc_html_e( 'SAML Identifier', 'cbox-sso-saml' ); ?></label></th>
 				<td>
-					<input name="sps-cuny-emplid" type="text" value="<?php echo esc_attr( $emplid ); ?>" />
+					<input name="cbox-sso-user-identifier" type="text" value="<?php echo esc_attr( $user_identifier ); ?>" />
+					<p class="description">
+						<?php esc_html_e( 'This is the string used to identify this user in the SAML IdP. Use extreme caution when changing this value, as it may prevent the user from logging in with SSO.', 'cbox-sso-saml' ); ?>
+					</p>
 				</td>
 			</tr>
 		</table>
@@ -387,29 +389,29 @@ class Init {
 	 * @param int $user_id The ID of the user being updated.
 	 */
 	public static function save_user_meta_field( $user_id ): void {
-		if ( ! isset( $_POST['sps-can-use-wp-auth'] ) || ! isset( $_POST['cuny_sso_allow_wp_login_nonce'] ) ) {
+		if ( ! isset( $_POST['cbox-sso-can-use-wp-auth'] ) || ! isset( $_POST['cbox_sso_saml_allow_wp_login_nonce'] ) ) {
 			return;
 		}
 
-		if ( ! wp_verify_nonce( $_POST['cuny_sso_allow_wp_login_nonce'], 'cuny_sso_allow_wp_login' ) ) {
+		if ( ! wp_verify_nonce( $_POST['cbox_sso_saml_allow_wp_login_nonce'], 'cbox_sso_saml_allow_wp_login' ) ) {
 			return;
 		}
 
-		$allow_wp_login = sanitize_text_field( wp_unslash( $_POST['sps-can-use-wp-auth'] ) );
+		$allow_wp_login = sanitize_text_field( wp_unslash( $_POST['cbox-sso-can-use-wp-auth'] ) );
 		$allow_wp_login = 'yes' === $allow_wp_login ? 'yes' : 'no';
 
 		if ( 'yes' === $allow_wp_login ) {
-			update_user_meta( $user_id, 'cuny_sso_allow_wp_login', 'yes' );
+			update_user_meta( $user_id, 'cbox_sso_saml_allow_wp_login', 'yes' );
 		} else {
-			delete_user_meta( $user_id, 'cuny_sso_allow_wp_login' );
+			delete_user_meta( $user_id, 'cbox_sso_saml_allow_wp_login' );
 		}
 
-		$emplid = sanitize_text_field( wp_unslash( $_POST['sps-cuny-emplid'] ) );
+		$emplid = sanitize_text_field( wp_unslash( $_POST['cbox-sso-user-identifier'] ) );
 
 		if ( $emplid ) {
-			update_user_meta( $user_id, 'cuny_sso_emplid', $emplid );
+			update_user_meta( $user_id, 'cbox_sso_saml_user_identifier', $emplid );
 		} else {
-			delete_user_meta( $user_id, 'cuny_sso_emplid' );
+			delete_user_meta( $user_id, 'cbox_sso_saml_user_identifier' );
 		}
 	}
 
@@ -420,7 +422,7 @@ class Init {
 	 * @param WP_User $profileuser          The user being edited.
 	 */
 	public static function filter_show_password_fields( $show_password_fields, $profileuser ): bool {
-		$allow_wp_login = get_user_meta( $profileuser->ID, 'cuny_sso_allow_wp_login', true );
+		$allow_wp_login = get_user_meta( $profileuser->ID, 'cbox_sso_saml_allow_wp_login', true );
 
 		// If the user is allowed to login with WordPress and no other code
 		// has already filtered this to false, show the password fields.
