@@ -104,8 +104,6 @@ class Auth {
 			return false;
 		}
 
-		list( $username, $expiration, $token, $hash ) = $cookie_data;
-
 		if ( ! $cookie_data['username'] ) {
 			return false;
 		}
