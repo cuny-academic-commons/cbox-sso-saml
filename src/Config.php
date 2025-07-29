@@ -17,7 +17,7 @@ class Config {
 	 * @return string
 	 */
 	public static function entity_id(): string {
-		return get_home_url();
+		return get_home_url( get_main_site_id() );
 	}
 
 	/**
@@ -26,7 +26,7 @@ class Config {
 	 * @return string
 	 */
 	public static function login_url(): string {
-		return get_home_url( null, 'sso/login' );
+		return get_home_url( get_main_site_id(), 'sso/login' );
 	}
 
 	/**
@@ -35,7 +35,7 @@ class Config {
 	 * @return string
 	 */
 	public static function verification_url(): string {
-		return get_home_url( null, 'sso/verify' );
+		return get_home_url( get_main_site_id(), 'sso/verify' );
 	}
 
 	/**
@@ -44,7 +44,7 @@ class Config {
 	 * @return string
 	 */
 	public static function logout_url(): string {
-		return get_home_url( null, 'sso/logout' );
+		return get_home_url( get_main_site_id(), 'sso/logout' );
 	}
 
 	/**
@@ -56,7 +56,7 @@ class Config {
 	 * @return bool
 	 */
 	public static function force_saml_email_address(): bool {
-		$saved = get_option( 'cbox_sso_saml_force_saml_email_address', '1' );
+		$saved = get_site_option( 'cbox_sso_saml_force_saml_email_address', '1' );
 
 		return apply_filters( 'cbox_sso_saml_force_saml_email_address', (bool) $saved );
 	}
@@ -67,7 +67,7 @@ class Config {
 	 * @return string
 	 */
 	public static function get_x509_certificate(): string {
-		$x509_cert = get_option( 'cbox_sso_saml_x509_certificate', '' );
+		$x509_cert = get_site_option( 'cbox_sso_saml_x509_certificate', '' );
 		$x509_cert = apply_filters( 'cbox_sso_saml_x509_certificate', $x509_cert );
 		$x509_cert = str_replace( array( "\n", "\r" ), '', $x509_cert );
 
@@ -80,7 +80,7 @@ class Config {
 	 * @return string
 	 */
 	public static function get_private_key(): string {
-		$private_key = get_option( 'cbox_sso_saml_private_key', '' );
+		$private_key = get_site_option( 'cbox_sso_saml_private_key', '' );
 		$private_key = apply_filters( 'cbox_sso_saml_private_key', $private_key );
 		$private_key = str_replace( array( "\n", "\r" ), '', $private_key );
 

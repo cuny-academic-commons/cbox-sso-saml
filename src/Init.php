@@ -26,6 +26,9 @@ class Init {
 		add_filter( 'login_url', array( __CLASS__, 'filter_login_url' ) );
 		add_filter( 'logout_url', array( __CLASS__, 'filter_logout_url' ) );
 
+		add_filter( 'admin_bar_init', array( __CLASS__, 'set_admin_bar_flag' ) );
+		add_filter( 'wp_after_admin_bar_render', array( __CLASS__, 'unset_admin_bar_flag' ) );
+
 		add_action( 'edit_user_profile', array( __CLASS__, 'add_user_meta_field' ) );
 		add_action( 'edit_user_profile_update', array( __CLASS__, 'save_user_meta_field' ) );
 
@@ -54,8 +57,10 @@ class Init {
 		$path = strtok( $path, '?' );
 
 		if ( '/sso/login' === $path ) {
+			$redirect_to = rawurldecode( $_GET['redirect_to'] ?? '' ); // phpcs:ignore WordPress.Security.NonceVerification.Recommended
+
 			$auth = new Auth();
-			$auth->saml()->login();
+			$auth->saml()->login( $redirect_to );
 			exit;
 		}
 
@@ -282,7 +287,14 @@ class Init {
 	 * @return string $login_url The default login URL.
 	 */
 	public static function filter_login_url(): string {
-		return Config::login_url();
+		$login_url = Config::login_url();
+
+		if ( self::doing_admin_bar() ) {
+			// If we're in the admin bar, we need to add a redirect parameter.
+			$login_url = add_query_arg( 'redirect_to', rawurlencode( bp_get_requested_url() ), $login_url );
+		}
+
+		return $login_url;
 	}
 
 	/**
@@ -299,6 +311,36 @@ class Init {
 		}
 
 		return Config::logout_url();
+	}
+
+	/**
+	 * Get or set the flag indicating whether the admin bar is being displayed.
+	 *
+	 * @param bool|null $set If provided, sets the flag to this value.
+	 * @return bool Whether the admin bar is being displayed.
+	 */
+	public static function doing_admin_bar( $set = null ): bool {
+		static $doing_admin_bar = null;
+
+		if ( ! is_null( $set ) ) {
+			$doing_admin_bar = $set;
+		}
+
+		return (bool) $doing_admin_bar;
+	}
+
+	/**
+	 * Set a flag in the admin bar to indicate that the SSO login handler should be used.
+	 */
+	public static function set_admin_bar_flag(): void {
+		self::doing_admin_bar( true );
+	}
+
+	/**
+	 * Unset the flag in the admin bar to indicate that the SSO login handler should be used.
+	 */
+	public static function unset_admin_bar_flag(): void {
+		self::doing_admin_bar( false );
 	}
 
 	/**

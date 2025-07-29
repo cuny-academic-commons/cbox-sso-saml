@@ -260,7 +260,13 @@ class Auth {
 
 		// This is a fully registered user. Log them in.
 		$this->set_sso_authentication_cookie( $user );
-		wp_safe_redirect( home_url() );
+
+		// phpcs:disable WordPress.Security.NonceVerification
+		$relay_state = isset( $_POST['RelayState'] ) ? wp_unslash( $_POST['RelayState'] ) : '';
+
+		add_filter( 'allowed_redirect_hosts', array( __CLASS__, 'allow_all_multisite_domains' ), 10, 2 );
+
+		wp_safe_redirect( $relay_state );
 		exit;
 	}
 
@@ -435,5 +441,32 @@ class Auth {
 		}
 
 		return $signup;
+	}
+
+	/**
+	 * Add all registered domains in the multisite network to the list of allowed redirect hosts.
+	 *
+	 * On large networks, avoids loading all sites via get_sites().
+	 *
+	 * @param array  $hosts          The list of allowed hosts.
+	 * @param string $requested_host The requested host to check.
+	 * @return array The updated list of allowed hosts.
+	 */
+	public static function allow_all_multisite_domains( array $hosts, string $requested_host ): array {
+		global $wpdb;
+
+		// Query to check if this domain is in the blogs table.
+		$exists = $wpdb->get_var(
+			$wpdb->prepare(
+				"SELECT blog_id FROM {$wpdb->blogs} WHERE domain = %s LIMIT 1",
+				$requested_host
+			)
+		);
+
+		if ( $exists ) {
+			$hosts[] = $requested_host;
+		}
+
+		return array_unique( $hosts );
 	}
 }
