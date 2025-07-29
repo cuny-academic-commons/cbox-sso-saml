@@ -542,7 +542,8 @@ class Init {
 			'cbox-sso-saml',
 			'var CBOXSSOSAML = ' . wp_json_encode(
 				array(
-					'allowEmailChange' => $allow_email_change,
+					'allowEmailChange'    => $allow_email_change,
+					'allowPasswordChange' => self::user_can_use_wp_auth( get_current_user_id() ),
 				)
 			),
 			'before'
