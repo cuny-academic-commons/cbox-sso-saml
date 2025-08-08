@@ -17,7 +17,14 @@ class Config {
 	 * @return string
 	 */
 	public static function entity_id(): string {
-		return get_home_url( get_main_site_id() );
+		$saved = get_site_option( 'cbox_sso_saml_entity_id', '' );
+		if ( empty( $saved ) ) {
+			// Default to the main site URL if no entity ID is set.
+			$saved = get_home_url( get_main_site_id() );
+		}
+
+		$saved = apply_filters( 'cbox_sso_saml_entity_id', $saved );
+		return $saved;
 	}
 
 	/**
@@ -75,6 +82,59 @@ class Config {
 	}
 
 	/**
+	 * Provide the IdP entity ID.
+	 *
+	 * This is the unique identifier for the Identity Provider (IdP).
+	 *
+	 * @return string
+	 */
+	public static function idp_entity_id(): string {
+		$default = 'https://ssologin.cuny.edu/oam/fed';
+		$raw     = get_site_option( 'cbox_sso_saml_idp_entity_id', $default );
+		return apply_filters( 'cbox_sso_saml_idp_entity_id', $raw );
+	}
+
+	/**
+	 * Provide the IdP SSO URL.
+	 *
+	 * This is the URL where the Service Provider (SP) will send SAML authentication requests.
+	 *
+	 * @return string
+	 */
+	public static function idp_sso_url(): string {
+		$default = 'https://ssologin.cuny.edu/oamfed/idp/samlv20';
+		$raw     = get_site_option( 'cbox_sso_saml_idp_sso_url', $default );
+		return apply_filters( 'cbox_sso_saml_idp_sso_url', $raw );
+	}
+
+	/**
+	 * Provide the IdP SLO URL.
+	 *
+	 * This is the URL where the Service Provider (SP) will send SAML logout requests.
+	 *
+	 * @return string
+	 */
+	public static function idp_slo_url(): string {
+		$default = 'https://ssologin.cuny.edu/oamfed/idp/samlv20';
+		$raw     = get_site_option( 'cbox_sso_saml_idp_slo_url', $default );
+		return apply_filters( 'cbox_sso_saml_idp_slo_url', $raw );
+	}
+
+	/**
+	 * Provide the X.509 certificate used by the IdP.
+	 *
+	 * This certificate is used to verify the authenticity of SAML responses from the IdP.
+	 *
+	 * @return string
+	 */
+	public static function idp_x509_certificate(): string {
+		$default = ''; // Leave blank if none provided.
+		$raw     = get_site_option( 'cbox_sso_saml_idp_x509_certificate', $default );
+		$clean   = str_replace( array( "\n", "\r" ), '', $raw );
+		return apply_filters( 'cbox_sso_saml_idp_x509_certificate', $clean );
+	}
+
+	/**
 	 * Provide the private key used to sign SAML requests.
 	 *
 	 * @return string
@@ -93,17 +153,11 @@ class Config {
 	 * @return array
 	 */
 	public static function saml_settings(): array {
-
 		$settings = array(
 			'strict'  => true,
 			'debug'   => false,
 			'baseurl' => null,
 
-			/**
-			 * Service provider (SP) configuration.
-			 *
-			 * This is the configuration for the site the plugin is active on.
-			 */
 			'sp'      => array(
 				'entityId'                 => self::entity_id(),
 				'assertionConsumerService' => array(
@@ -119,33 +173,39 @@ class Config {
 				'privateKey'               => self::get_private_key(),
 			),
 
-			/**
-			 * CUNY SSO IDP configuration.
-			 *
-			 * @see https://ssologin.cuny.edu/idp/metadata/oam-saml-metadata.xml
-			 */
 			'idp'     => array(
-				'entityId'            => 'https://ssologin.cuny.edu/oam/fed',
+				'entityId'            => self::idp_entity_id(),
 				'singleSignOnService' => array(
 					'binding' => 'urn:oasis:names:tc:SAML:2.0:bindings:HTTP-Redirect',
-					'url'     => 'https://ssologin.cuny.edu/oamfed/idp/samlv20',
+					'url'     => self::idp_sso_url(),
 				),
 				'singleLogoutService' => array(
 					'binding' => 'urn:oasis:names:tc:SAML:2.0:bindings:HTTP-Redirect',
-					'url'     => 'https://ssologin.cuny.edu/oamfed/idp/samlv20',
+					'url'     => self::idp_slo_url(),
 				),
 				'NameIDFormat'        => array(
 					'urn:oasis:names:tc:SAML:2.0:nameid-format:transient',
 				),
-				'x509cert'            => 'MIIC1zCCAb+gAwIBAgIEe1NtojANBgkqhkiG9w0BAQsFADAcMRowGAYDVQQDExFzc29sb2dpbi5jdW55LmVkdTAeFw0yMzAzMzAwMDMxMjVaFw0zMzAzMjcwMDMxMjVaMBwxGjAYBgNVBAMTEXNzb2xvZ2luLmN1bnkuZWR1MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAn849Br9l/HSNy4AudqR4P6lYm30vHmUZ5SVNO91OGRnEeqsX6sPhDrZwqDHdmWjmM3GZCRPGw0sVN7oKeWemsNGJ7wSlSEyBXtKTxEwJ6AXIkPz0HGmVCQsBuIugdCojj9N8CufltktiGxYoZVHnf0ra3JlY7lNB1l/ORxWL0THVkn5eszCQTaSUoq321tGQv0gqrZFC9yexyls2kPH2A3lp86pwRpBp8ZXVh5PltXTJygLxbOMC84IlcM72RJUfh4yM3rF+VfudEB7LwguJYDdmAvl81JQ3EYTSQLFLEKKWnRxljwsnEbx3x6z5/Kry5iBjhfltKDW7xS0h/qwJzwIDAQABoyEwHzAdBgNVHQ4EFgQUQ98fxrn00UD4LvounfGTsvPCKQ0wDQYJKoZIhvcNAQELBQADggEBAAKCeCol7PBKjcBuHWSUcvor31a6aA6DO3k01cgFfOzT392WuvwqNzfMV7XSbV1Rk3Xi/weX2Xpp8J2ZfNjZ3f9NLu+6SSvuuAx+1GPn5/2D+N211WRQt8SsTqEET1J2qQHaJR97Iw1RTmCM0PFe4RHLi2frVwAG0djaIK8xqVdml44IYNy8kLUkBvM9zuraU/1+s42Uf5IuMo4+i7RvxAc4SHJUDoTY1wOZk2QlbHsyaJxsE372KW9QnD9beV6Rb0197HDbfCS1wbpIEV0gzybeWJ06PQvdrKUmuuccATCZuCO5nHCUoT2K17EV1HK365jN334YsXS9/K43eQwP9NY=',
+				'x509cert'            => self::idp_x509_certificate(),
 			),
 		);
 
-		/**
-		 * Filters the SAML settings.
-		 *
-		 * @param array $settings SAML settings.
-		 */
+		$private_key = self::get_private_key();
+
+		$security = array(
+			'authnRequestsSigned'  => false,
+			'logoutRequestSigned'  => false,
+			'logoutResponseSigned' => false,
+		);
+
+		if ( ! empty( $private_key ) ) {
+			$security['authnRequestsSigned']  = true;
+			$security['logoutRequestSigned']  = true;
+			$security['logoutResponseSigned'] = true;
+		}
+
+		$settings['security'] = apply_filters( 'cbox_sso_saml_security_settings', $security );
+
 		return apply_filters( 'cbox_sso_saml_saml_settings', $settings );
 	}
 }

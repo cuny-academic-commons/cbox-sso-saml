@@ -43,6 +43,10 @@ class Init {
 		if ( defined( 'CBOX_SSO_SAML_DEBUG' ) && CBOX_SSO_SAML_DEBUG ) {
 			add_action( 'init', array( __CLASS__, 'setup_debug' ) );
 		}
+
+		if ( is_network_admin() ) {
+			Admin::init();
+		}
 	}
 
 	/**
