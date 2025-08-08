@@ -6,6 +6,7 @@
  * Plugin URI:   https://github.com/cuny-academic-commons/cbox-sso-saml
  * Author:       CUNY Academic Commons
  * Author URI:   https://commons.gc.cuny.edu
+ * Network:      true
  * Text Domain:  cbox-sso-saml
  * Requires PHP: 7.4
  *
