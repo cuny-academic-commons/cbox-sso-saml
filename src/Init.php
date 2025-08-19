@@ -24,7 +24,7 @@ class Init {
 		add_action( 'login_form_login', array( __CLASS__, 'redirect_wp_login_attempts' ) );
 		add_filter( 'bp_get_signup_page', array( __CLASS__, 'filter_signup_url' ) );
 		add_filter( 'login_url', array( __CLASS__, 'filter_login_url' ) );
-		add_filter( 'logout_url', array( __CLASS__, 'filter_logout_url' ) );
+		add_filter( 'logout_url', array( __CLASS__, 'filter_logout_url' ), 5, 2 );
 
 		add_filter( 'admin_bar_init', array( __CLASS__, 'set_admin_bar_flag' ) );
 		add_filter( 'wp_after_admin_bar_render', array( __CLASS__, 'unset_admin_bar_flag' ) );
@@ -305,16 +305,22 @@ class Init {
 	 * Filter the default logout URL to go through the SSO logout endpoint.
 	 *
 	 * @param string $logout_url The default logout URL.
+	 * @param string $redirect   The redirect URL after logout.
 	 * @return string $logout_url The default logout URL.
 	 */
-	public static function filter_logout_url( $logout_url ): string {
+	public static function filter_logout_url( $logout_url, $redirect ): string {
 		$user = wp_get_current_user();
 
 		if ( self::user_can_use_wp_auth( $user->ID ) ) {
 			return $logout_url;
 		}
 
-		return Config::logout_url();
+		return add_query_arg(
+			array(
+				'redirect_to' => rawurlencode( $redirect ),
+			),
+			Config::logout_url()
+		);
 	}
 
 	/**
