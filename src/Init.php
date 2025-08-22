@@ -80,7 +80,7 @@ class Init {
 
 		if ( '/sso/logout' === $path ) {
 			$auth = new Auth();
-			if ( isset( $_GET['SAMLResponse'] ) ) { // phpcs:ignore WordPress.Security.NonceVerification.Recommended
+			if ( ! $auth->saml()->isAuthenticated() || isset( $_GET['SAMLResponse'] ) ) { // phpcs:ignore WordPress.Security.NonceVerification.Recommended
 				$auth->clear_sso_authorization_cookie();
 				wp_clear_auth_cookie();
 
