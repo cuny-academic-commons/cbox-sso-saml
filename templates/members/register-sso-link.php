@@ -18,9 +18,9 @@ use CBOX\SSO\SAML\Config;
 			<h1><?php esc_html_e( 'Create an Account', 'commons-in-a-box' ); ?></h1>
 		</div>
 
-		<p>To create an account, please login with your CUNY credentials.</p>
+		<p>To create an account, please login with your SSO credentials.</p>
 
-		<a class="btn btn-primary" href="<?php echo esc_url( Config::login_url() ); ?>"><?php esc_html_e( 'Login with CUNY Login', 'cbox-sso-saml' ); ?></a>
+		<a class="btn btn-primary" href="<?php echo esc_url( Config::login_url() ); ?>"><?php esc_html_e( 'Login', 'cbox-sso-saml' ); ?></a>
 
 	</div>
 
