@@ -114,10 +114,11 @@ class CacheIntegration {
 			$reject_uris = array();
 		}
 
-		// WP Super Cache uses regex patterns.
+		// WP Super Cache uses regex patterns to match URIs.
+		// We use preg_quote to escape special characters and match from the start.
 		$sso_paths = self::get_sso_paths();
 		foreach ( $sso_paths as $path ) {
-			$reject_uris[] = preg_quote( $path, '/' );
+			$reject_uris[] = '^' . preg_quote( $path, '/' );
 		}
 
 		return $reject_uris;
@@ -137,7 +138,12 @@ class CacheIntegration {
 
 		$sso_paths = self::get_sso_paths();
 		foreach ( $sso_paths as $path ) {
-			if ( false !== strpos( $uri, $path ) ) {
+			// Use str_starts_with or fallback for PHP < 8.0.
+			if ( function_exists( 'str_starts_with' ) ) {
+				if ( str_starts_with( $uri, $path ) ) {
+					return true;
+				}
+			} elseif ( 0 === strpos( $uri, $path ) ) {
 				return true;
 			}
 		}
