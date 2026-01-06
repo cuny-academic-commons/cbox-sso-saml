@@ -47,6 +47,9 @@ class Init {
 		if ( is_network_admin() ) {
 			Admin::init();
 		}
+
+		// Initialize cache plugin integrations.
+		CacheIntegration::init();
 	}
 
 	/**
