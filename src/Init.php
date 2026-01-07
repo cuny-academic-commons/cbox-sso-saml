@@ -233,8 +233,10 @@ class Init {
 			);
 		}
 
-		$user = wpmu_activate_signup( $key );
-		$user = new \WP_User( $user['user_id'] );
+		// @todo Better error handling.
+		$user_id = bp_core_activate_signup( $key );
+
+		$user = new \WP_User( $user_id );
 
 		$wpdb->delete(
 			$wpdb->signups,
