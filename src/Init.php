@@ -64,7 +64,7 @@ class Init {
 		$path = strtok( $path, '?' );
 
 		if ( '/sso/login' === $path ) {
-			$redirect_to = rawurldecode( $_GET['redirect_to'] ?? '' ); // phpcs:ignore WordPress.Security.NonceVerification.Recommended
+			$redirect_to = rawurldecode( $_GET['redirect_to'] ?? home_url() ); // phpcs:ignore WordPress.Security.NonceVerification.Recommended
 
 			$auth = new Auth();
 			$auth->saml()->login( $redirect_to );
