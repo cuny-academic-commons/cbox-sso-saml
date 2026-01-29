@@ -628,7 +628,7 @@ class Init {
 		}
 
 		// Verify nonce.
-		if ( ! isset( $_POST['_wpnonce'] ) || ! wp_verify_nonce( sanitize_text_field( wp_unslash( $_POST['_wpnonce'] ) ), 'bp_settings_general' ) ) {
+		if ( ! isset( $_POST['_wpnonce'] ) || ! wp_verify_nonce( wp_unslash( $_POST['_wpnonce'] ), 'bp_settings_general' ) ) {
 			return;
 		}
 
