@@ -40,6 +40,9 @@ class Init {
 		add_action( 'wp_enqueue_scripts', array( __CLASS__, 'enqueue_assets' ) );
 		add_action( 'admin_enqueue_scripts', array( __CLASS__, 'enqueue_admin_assets' ) );
 
+		// Allow SSO users to change email without password in BP settings.
+		add_action( 'bp_actions', array( __CLASS__, 'bypass_bp_password_check_for_sso_users' ), 5 );
+
 		if ( defined( 'CBOX_SSO_SAML_DEBUG' ) && CBOX_SSO_SAML_DEBUG ) {
 			add_action( 'init', array( __CLASS__, 'setup_debug' ) );
 		}
@@ -601,5 +604,94 @@ class Init {
 		if ( 'profile.php' === $pagenow || 'user-edit.php' === $pagenow ) {
 			wp_enqueue_script( 'cbox-sso-saml-admin' );
 		}
+	}
+
+	/**
+	 * Bypass BP password check for SSO users when changing email.
+	 *
+	 * This allows SSO users to change their email address in BP settings
+	 * without needing to provide their current password (which they don't know).
+	 *
+	 * We apply a JIT filter to check_password that returns true for SSO users
+	 * in the BP settings context, allowing them to change their email just like
+	 * they can in /wp-admin/profile.php.
+	 */
+	public static function bypass_bp_password_check_for_sso_users(): void {
+		// Only proceed if this is a BP settings POST request.
+		if ( ! bp_is_post_request() ) {
+			return;
+		}
+
+		// Check if we're in the BP settings component and general action.
+		if ( ! bp_is_settings_component() || ! bp_is_current_action( 'general' ) ) {
+			return;
+		}
+
+		// Verify nonce.
+		if ( ! isset( $_POST['_wpnonce'] ) || ! wp_verify_nonce( wp_unslash( $_POST['_wpnonce'] ), 'bp_settings_general' ) ) {
+			return;
+		}
+
+		$user_id = bp_displayed_user_id();
+		if ( ! $user_id ) {
+			return;
+		}
+
+		if ( get_current_user_id() !== $user_id ) {
+			return;
+		}
+
+		// Only apply for SSO users (those who cannot use WP auth).
+		if ( self::user_can_use_wp_auth( $user_id ) ) {
+			return;
+		}
+
+		// Fake the value of 'pwd' to trigger BP's save routine.
+		$_POST['pwd'] = 'password'; // phpcs:ignore WordPress.Security.NonceVerification.Missing
+
+		// Apply the JIT filter to bypass password check.
+		add_filter( 'check_password', array( __CLASS__, 'bypass_password_check_for_bp_settings' ), 10, 4 );
+	}
+
+	/**
+	 * Filters check_password to allow SSO users to bypass password check in BP settings.
+	 *
+	 * This filter is only applied in the specific context of BP settings email changes
+	 * for SSO users, ensuring it doesn't create security vulnerabilities elsewhere.
+	 *
+	 * @param bool   $check    Whether the passwords match.
+	 * @param string $password The plaintext password.
+	 * @param string $hash     The hashed password.
+	 * @param int    $user_id  The user ID.
+	 * @return bool Whether to allow the password check to pass.
+	 */
+	public static function bypass_password_check_for_bp_settings( $check, $password, $hash, $user_id ): bool {
+		// Only bypass for SSO users in BP settings context.
+		if ( ! bp_is_settings_component() || ! bp_is_current_action( 'general' ) ) {
+			return $check;
+		}
+
+		// Only bypass for the displayed user (the user being edited).
+		$displayed_user_id = bp_displayed_user_id();
+		$user_id           = (int) $user_id;
+		if ( ! $displayed_user_id || $user_id !== $displayed_user_id ) {
+			return $check;
+		}
+
+		// Only bypass for SSO users.
+		if ( self::user_can_use_wp_auth( $user_id ) ) {
+			return $check;
+		}
+
+		// Verify this is the current password field being checked (not a new password).
+		// BP passes the current password via $_POST['pwd'].
+		if ( isset( $_POST['pwd'] ) && $password === wp_unslash( $_POST['pwd'] ) ) { // phpcs:ignore WordPress.Security.NonceVerification.Missing
+			$check = true;
+		}
+
+		// Remove the filter after first use to prevent unintended side effects.
+		remove_filter( 'check_password', array( __CLASS__, 'bypass_password_check_for_bp_settings' ), 10 );
+
+		return $check;
 	}
 }
