@@ -612,7 +612,7 @@ class Init {
 	 * This allows SSO users to change their email address in BP settings
 	 * without needing to provide their current password (which they don't know).
 	 *
-	 * We apply a JIT filter to wp_check_password that returns true for SSO users
+	 * We apply a JIT filter to check_password that returns true for SSO users
 	 * in the BP settings context, allowing them to change their email just like
 	 * they can in /wp-admin/profile.php.
 	 */
