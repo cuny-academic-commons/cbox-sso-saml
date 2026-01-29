@@ -669,6 +669,7 @@ class Init {
 
 		// Only bypass for the displayed user (the user being edited).
 		$displayed_user_id = bp_displayed_user_id();
+		$user_id           = (int) $user_id;
 		if ( ! $displayed_user_id || $user_id !== $displayed_user_id ) {
 			return $check;
 		}
