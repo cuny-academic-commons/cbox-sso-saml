@@ -637,6 +637,10 @@ class Init {
 			return;
 		}
 
+		if ( get_current_user_id() !== $user_id ) {
+			return;
+		}
+
 		// Only apply for SSO users (those who cannot use WP auth).
 		if ( self::user_can_use_wp_auth( $user_id ) ) {
 			return;
