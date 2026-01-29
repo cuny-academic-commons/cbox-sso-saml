@@ -639,11 +639,11 @@ class Init {
 		}
 
 		// Apply the JIT filter to bypass password check.
-		add_filter( 'wp_check_password', array( __CLASS__, 'bypass_password_check_for_bp_settings' ), 10, 4 );
+		add_filter( 'check_password', array( __CLASS__, 'bypass_password_check_for_bp_settings' ), 10, 4 );
 	}
 
 	/**
-	 * Filter wp_check_password to allow SSO users to bypass password check in BP settings.
+	 * Filter check_password to allow SSO users to bypass password check in BP settings.
 	 *
 	 * This filter is only applied in the specific context of BP settings email changes
 	 * for SSO users, ensuring it doesn't create security vulnerabilities elsewhere.
@@ -675,7 +675,7 @@ class Init {
 		// BP passes the current password via $_POST['pwd'].
 		if ( isset( $_POST['pwd'] ) && $password === wp_unslash( $_POST['pwd'] ) ) { // phpcs:ignore WordPress.Security.NonceVerification.Missing
 			// Remove the filter after first use to prevent unintended side effects.
-			remove_filter( 'wp_check_password', array( __CLASS__, 'bypass_password_check_for_bp_settings' ), 10 );
+			remove_filter( 'check_password', array( __CLASS__, 'bypass_password_check_for_bp_settings' ), 10 );
 			return true;
 		}
 
