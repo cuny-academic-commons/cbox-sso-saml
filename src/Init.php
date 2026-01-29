@@ -671,11 +671,12 @@ class Init {
 			return $check;
 		}
 
+		// Remove the filter after first use to prevent unintended side effects.
+		remove_filter( 'check_password', array( __CLASS__, 'bypass_password_check_for_bp_settings' ), 10 );
+
 		// Verify this is the current password field being checked (not a new password).
 		// BP passes the current password via $_POST['pwd'].
 		if ( isset( $_POST['pwd'] ) && $password === wp_unslash( $_POST['pwd'] ) ) { // phpcs:ignore WordPress.Security.NonceVerification.Missing
-			// Remove the filter after first use to prevent unintended side effects.
-			remove_filter( 'check_password', array( __CLASS__, 'bypass_password_check_for_bp_settings' ), 10 );
 			return true;
 		}
 
