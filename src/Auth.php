@@ -141,6 +141,13 @@ class Auth {
 	 * @param int    $response The HTTP response code.
 	 */
 	public function handle_error( string $error, int $response = 500 ): void {
+		/**
+		 * Filters the error message before display.
+		 *
+		 * @param string $error The error message.
+		 * @param int    $response The HTTP response code.
+		 */
+		$error = apply_filters( 'cbox_sso_saml_handle_error_message', $error, $response );
 
 		$message = sprintf(
 			'<p>%s</p><p><a href="%s">%s</a></p>',
@@ -148,6 +155,15 @@ class Auth {
 			esc_url( Config::logout_url() ),
 			esc_html__( 'Log out of SSO connection.', 'cbox-sso-saml' )
 		);
+
+		/**
+		 * Filters the final error message before display.
+		 *
+		 * @param string $message  The error message.
+		 * @param string $error    The original error message.
+		 * @param int    $response The HTTP response code.
+		 */
+		$message = apply_filters( 'cbox_sso_saml_handle_error_message_markup', $message, $error, $response );
 
 		wp_die(
 			$message, // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
