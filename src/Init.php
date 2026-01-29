@@ -213,14 +213,14 @@ class Init {
 		$cookie_data = $auth->get_cookie_data();
 
 		if ( empty( $cookie_data['username'] ) ) {
-			$auth->handle_error( 'Invalid cookie data.' );
+			$auth->handle_error( __( 'Invalid cookie data.', 'cbox-sso-saml' ) );
 		}
 
 		$username = $cookie_data['username'];
 
 		$temp_signup = $auth->get_temp_signup( $username );
 		if ( ! $temp_signup ) {
-			$auth->handle_error( 'No signup found for this user.' );
+			$auth->handle_error( __( 'No signup found for this user.', 'cbox-sso-saml' ) );
 		}
 
 		if ( Config::force_saml_email_address() ) {

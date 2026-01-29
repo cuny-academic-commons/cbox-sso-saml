@@ -146,12 +146,12 @@ class Auth {
 			'<p>%s</p><p><a href="%s">%s</a></p>',
 			esc_html( $error ),
 			esc_url( Config::logout_url() ),
-			esc_html__( 'Log out of SSO connection.', 'cbox-saml-sso' )
+			esc_html__( 'Log out of SSO connection.', 'cbox-sso-saml' )
 		);
 
 		wp_die(
 			$message, // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
-			esc_html__( 'Error authorizing with SSO', 'cbox-saml-sso' ),
+			esc_html__( 'Error authorizing with SSO', 'cbox-sso-saml' ),
 			array(
 				'response' => $response, // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
 			)
@@ -188,11 +188,17 @@ class Auth {
 		}
 
 		if ( ! empty( $this->saml()->getErrors() ) ) {
-			$this->handle_error( 'SAML response errors: ' . implode( ', ', $this->saml()->getErrors() ) );
+			$this->handle_error(
+				sprintf(
+					/* translators: %s: comma-separated list of SAML errors */
+					__( 'SAML response errors: %s', 'cbox-sso-saml' ),
+					implode( ', ', $this->saml()->getErrors() )
+				)
+			);
 		}
 
 		if ( ! $this->saml()->isAuthenticated() ) {
-			$this->handle_error( 'User is not authenticated.', 403 );
+			$this->handle_error( __( 'User is not authenticated.', 'cbox-sso-saml' ), 403 );
 		}
 
 		$user_identifier = $this->get_user_identifier();
@@ -214,7 +220,7 @@ class Auth {
 		}
 
 		if ( false === $this->can_register() ) {
-			$this->handle_error( 'User is not authorized to register.', 403 );
+			$this->handle_error( __( 'User is not authorized to register.', 'cbox-sso-saml' ), 403 );
 		}
 
 		$user = $this->get_user( $user_identifier );
@@ -246,7 +252,7 @@ class Auth {
 		}
 
 		if ( ! $fragment ) {
-			$this->handle_error( 'No signup record found.', 403 );
+			$this->handle_error( __( 'No signup record found.', 'cbox-sso-saml' ), 403 );
 		}
 
 		// The user is now authorized to register.
