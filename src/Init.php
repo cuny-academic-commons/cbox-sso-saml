@@ -632,18 +632,25 @@ class Init {
 			return;
 		}
 
-		// Only apply for SSO users (those who cannot use WP auth).
 		$user_id = bp_displayed_user_id();
+		if ( ! $user_id ) {
+			return;
+		}
+
+		// Only apply for SSO users (those who cannot use WP auth).
 		if ( self::user_can_use_wp_auth( $user_id ) ) {
 			return;
 		}
+
+		// Fake the value of 'pwd' to trigger BP's save routine.
+		$_POST['pwd'] = 'password'; // phpcs:ignore WordPress.Security.NonceVerification.Missing
 
 		// Apply the JIT filter to bypass password check.
 		add_filter( 'check_password', array( __CLASS__, 'bypass_password_check_for_bp_settings' ), 10, 4 );
 	}
 
 	/**
-	 * Filter check_password to allow SSO users to bypass password check in BP settings.
+	 * Filters check_password to allow SSO users to bypass password check in BP settings.
 	 *
 	 * This filter is only applied in the specific context of BP settings email changes
 	 * for SSO users, ensuring it doesn't create security vulnerabilities elsewhere.
@@ -662,7 +669,7 @@ class Init {
 
 		// Only bypass for the displayed user (the user being edited).
 		$displayed_user_id = bp_displayed_user_id();
-		if ( $user_id !== $displayed_user_id ) {
+		if ( ! $displayed_user_id || $user_id !== $displayed_user_id ) {
 			return $check;
 		}
 
@@ -671,14 +678,14 @@ class Init {
 			return $check;
 		}
 
-		// Remove the filter after first use to prevent unintended side effects.
-		remove_filter( 'check_password', array( __CLASS__, 'bypass_password_check_for_bp_settings' ), 10 );
-
 		// Verify this is the current password field being checked (not a new password).
 		// BP passes the current password via $_POST['pwd'].
 		if ( isset( $_POST['pwd'] ) && $password === wp_unslash( $_POST['pwd'] ) ) { // phpcs:ignore WordPress.Security.NonceVerification.Missing
-			return true;
+			$check = true;
 		}
+
+		// Remove the filter after first use to prevent unintended side effects.
+		remove_filter( 'check_password', array( __CLASS__, 'bypass_password_check_for_bp_settings' ), 10 );
 
 		return $check;
 	}
