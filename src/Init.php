@@ -290,7 +290,12 @@ class Init {
 	 * @return string $signup_url The default signup URL.
 	 */
 	public static function filter_signup_url(): string {
-		return Config::login_url();
+		return add_query_arg(
+			array(
+				'redirect_to' => home_url(),
+			),
+			Config::login_url()
+		);
 	}
 
 	/**
@@ -301,12 +306,18 @@ class Init {
 	public static function filter_login_url(): string {
 		$login_url = Config::login_url();
 
+		$redirect_to = home_url();
 		if ( self::doing_admin_bar() ) {
 			// If we're in the admin bar, we need to add a redirect parameter.
-			$login_url = add_query_arg( 'redirect_to', rawurlencode( bp_get_requested_url() ), $login_url );
+			$redirect_to = bp_get_requested_url();
 		}
 
-		return $login_url;
+		return add_query_arg(
+			array(
+				'redirect_to' => rawurlencode( $redirect_to ),
+			),
+			$login_url
+		);
 	}
 
 	/**
