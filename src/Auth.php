@@ -359,6 +359,7 @@ class Auth {
 	private function get_user( string $user_identifier ) {
 		$users = get_users(
 			array(
+				'blog_id'    => 0,
 				'meta_key'   => 'cbox_sso_saml_user_identifier',
 				'meta_value' => $user_identifier,
 			)
