@@ -306,7 +306,7 @@ class Init {
 	public static function filter_login_url(): string {
 		// We need a different kind of filtering on wp-login.php.
 		if ( 'wp-login.php' === basename( $_SERVER['SCRIPT_NAME'] ) ) {
-			return home_url( add_query_arg( 'normal', '1', 'wp-login.php' ) );
+			return add_query_arg( 'normal', '1', site_url( 'wp-login.php' ) );
 		}
 
 		$login_url = Config::login_url();
@@ -384,11 +384,7 @@ class Init {
 	 * is necessary in particular for users who have the ability to use
 	 * local WP login.
 	 *
-	 * Password reset pages are also allowed through:
-	 * - ?action=lostpassword is accessible to all users.
-	 * - ?action=rp and ?action=resetpass are accessible only to users who are
-	 *   allowed to use WP auth (?login= is checked against usermeta).
-	 * - ?checkemail=* is accessible after submitting the lost-password form.
+	 * Password reset pages are also allowed through.
 	 */
 	public static function redirect_wp_login(): void {
 		// POSTs are handled by the `redirect_wp_login_attempts` method.
@@ -409,7 +405,7 @@ class Init {
 			return;
 		}
 
-		// Allow the password reset form only for users who are permitted to use WP auth.
+		// Allow the password reset flow.
 		if ( in_array( $action, array( 'rp', 'resetpass' ), true ) ) {
 			return;
 		}
@@ -520,7 +516,7 @@ class Init {
 	}
 
 	/**
-	 * Filter whether a user can change their email address.
+	 * Filter whether a user can change their password.
 	 *
 	 * @param bool $show_password_fields Whether to show password fields.
 	 * @param int  $user_id              The user being edited.
