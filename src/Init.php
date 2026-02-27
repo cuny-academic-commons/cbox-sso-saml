@@ -35,7 +35,7 @@ class Init {
 		add_action( 'edit_user_profile_update', array( __CLASS__, 'save_user_meta_field' ) );
 
 		add_filter( 'allow_password_reset', array( __CLASS__, 'filter_show_password_fields' ), 10, 2 );
-		add_filter( 'show_password_fields', array( __CLASS__, 'filter_show_password_fields' ), 10, 2 );
+		add_filter( 'show_password_fields', array( __CLASS__, 'filter_show_password_fields_user' ), 10, 2 );
 
 		add_action( 'wp_footer', array( __CLASS__, 'remove_login_handler' ) );
 
@@ -306,6 +306,11 @@ class Init {
 	 * @return string $login_url The default login URL.
 	 */
 	public static function filter_login_url(): string {
+		// We need a different kind of filtering on wp-login.php.
+		if ( 'wp-login.php' === basename( $_SERVER['SCRIPT_NAME'] ) ) {
+			return add_query_arg( 'normal', '1', site_url( 'wp-login.php' ) );
+		}
+
 		$login_url = Config::login_url();
 
 		$redirect_to = home_url();
@@ -380,12 +385,33 @@ class Init {
 	 * Appending the ?normal query parameter will allow access. This
 	 * is necessary in particular for users who have the ability to use
 	 * local WP login.
+	 *
+	 * Password reset pages are also allowed through.
 	 */
 	public static function redirect_wp_login(): void {
 		// POSTs are handled by the `redirect_wp_login_attempts` method.
 		if ( 'POST' === $_SERVER['REQUEST_METHOD'] ) {
 			return;
 		}
+
+		// phpcs:disable WordPress.Security.NonceVerification.Recommended
+		$action = isset( $_GET['action'] ) ? sanitize_key( $_GET['action'] ) : '';
+
+		// Allow all users to access the first step of the password reset flow.
+		if ( in_array( $action, array( 'lostpassword', 'retrievepassword' ), true ) ) {
+			return;
+		}
+
+		// Allow the "check your email" confirmation page shown after submitting the form.
+		if ( isset( $_GET['checkemail'] ) ) {
+			return;
+		}
+
+		// Allow the password reset flow.
+		if ( in_array( $action, array( 'rp', 'resetpass' ), true ) ) {
+			return;
+		}
+		// phpcs:enable WordPress.Security.NonceVerification.Recommended
 
 		if ( ! isset( $_GET['normal'] ) ) { // phpcs:ignore WordPress.Security.NonceVerification.Recommended
 			wp_safe_redirect( Config::login_url() );
@@ -500,19 +526,29 @@ class Init {
 	}
 
 	/**
-	 * Filter whether to show password management fields on the user profile page.
+	 * Filter whether a user can change their password.
 	 *
-	 * @param bool    $show_password_fields Whether to show password fields.
-	 * @param WP_User $profileuser          The user being edited.
+	 * @param bool $show_password_fields Whether to show password fields.
+	 * @param int  $user_id              The user being edited.
 	 */
-	public static function filter_show_password_fields( $show_password_fields, $profileuser ): bool {
-		$allow_wp_login = get_user_meta( $profileuser->ID, 'cbox_sso_saml_allow_wp_login', true );
+	public static function filter_show_password_fields( $show_password_fields, $user_id ): bool {
+		$allow_wp_login = get_user_meta( $user_id, 'cbox_sso_saml_allow_wp_login', true );
 
 		if ( 'yes' === $allow_wp_login ) {
 			return true;
 		}
 
 		return false;
+	}
+
+	/**
+	 * Filter whether to show password management fields on the user profile page.
+	 *
+	 * @param bool    $show_password_fields Whether to show password fields.
+	 * @param WP_User $profileuser          The user being edited.
+	 */
+	public static function filter_show_password_fields_user( $show_password_fields, $profileuser ): bool {
+		return self::filter_show_password_fields( $show_password_fields, $profileuser->ID );
 	}
 
 	/**
