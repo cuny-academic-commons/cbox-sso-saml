@@ -29,7 +29,9 @@ class Init {
 		add_filter( 'admin_bar_init', array( __CLASS__, 'set_admin_bar_flag' ) );
 		add_filter( 'wp_after_admin_bar_render', array( __CLASS__, 'unset_admin_bar_flag' ) );
 
+		add_action( 'show_user_profile', array( __CLASS__, 'add_user_meta_field' ) );
 		add_action( 'edit_user_profile', array( __CLASS__, 'add_user_meta_field' ) );
+		add_action( 'personal_options_update', array( __CLASS__, 'save_user_meta_field' ) );
 		add_action( 'edit_user_profile_update', array( __CLASS__, 'save_user_meta_field' ) );
 
 		add_filter( 'allow_password_reset', array( __CLASS__, 'filter_show_password_fields' ), 10, 2 );
@@ -425,6 +427,10 @@ class Init {
 	 * @param \WP_User $profile_user The user being edited.
 	 */
 	public static function add_user_meta_field( $profile_user ): void {
+		if ( ! current_user_can( 'manage_users' ) || ! current_user_can( 'edit_user', $profile_user->ID ) ) {
+			return;
+		}
+
 		$allow_wp_login = get_user_meta( $profile_user->ID, 'cbox_sso_saml_allow_wp_login', true );
 		$allow_wp_login = $allow_wp_login ? $allow_wp_login : 'no';
 
@@ -463,6 +469,10 @@ class Init {
 	 * @param int $user_id The ID of the user being updated.
 	 */
 	public static function save_user_meta_field( $user_id ): void {
+		if ( ! current_user_can( 'manage_users' ) || ! current_user_can( 'edit_user', $user_id ) ) {
+			return;
+		}
+
 		if ( ! isset( $_POST['cbox-sso-can-use-wp-auth'] ) || ! isset( $_POST['cbox_sso_saml_allow_wp_login_nonce'] ) ) {
 			return;
 		}
