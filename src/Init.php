@@ -33,7 +33,7 @@ class Init {
 		add_action( 'edit_user_profile_update', array( __CLASS__, 'save_user_meta_field' ) );
 
 		add_filter( 'allow_password_reset', array( __CLASS__, 'filter_show_password_fields' ), 10, 2 );
-		add_filter( 'show_password_fields', array( __CLASS__, 'filter_show_password_fields' ), 10, 2 );
+		add_filter( 'show_password_fields', array( __CLASS__, 'filter_show_password_fields_user' ), 10, 2 );
 		add_filter( 'lostpassword_redirect', array( __CLASS__, 'filter_lostpassword_redirect' ) );
 
 		add_action( 'wp_footer', array( __CLASS__, 'remove_login_handler' ) );
@@ -525,19 +525,29 @@ class Init {
 	}
 
 	/**
-	 * Filter whether to show password management fields on the user profile page.
+	 * Filter whether a user can change their email address.
 	 *
-	 * @param bool    $show_password_fields Whether to show password fields.
-	 * @param WP_User $profileuser          The user being edited.
+	 * @param bool $show_password_fields Whether to show password fields.
+	 * @param int  $user_id              The user being edited.
 	 */
-	public static function filter_show_password_fields( $show_password_fields, $profileuser ): bool {
-		$allow_wp_login = get_user_meta( $profileuser->ID, 'cbox_sso_saml_allow_wp_login', true );
+	public static function filter_show_password_fields( $show_password_fields, $user_id ): bool {
+		$allow_wp_login = get_user_meta( $user_id, 'cbox_sso_saml_allow_wp_login', true );
 
 		if ( 'yes' === $allow_wp_login ) {
 			return true;
 		}
 
 		return false;
+	}
+
+	/**
+	 * Filter whether to show password management fields on the user profile page.
+	 *
+	 * @param bool    $show_password_fields Whether to show password fields.
+	 * @param WP_User $profileuser          The user being edited.
+	 */
+	public static function filter_show_password_fields_user( $show_password_fields, $profileuser ): bool {
+		return self::filter_show_password_fields( $show_password_fields, $profileuser->ID );
 	}
 
 	/**
