@@ -34,7 +34,6 @@ class Init {
 
 		add_filter( 'allow_password_reset', array( __CLASS__, 'filter_show_password_fields' ), 10, 2 );
 		add_filter( 'show_password_fields', array( __CLASS__, 'filter_show_password_fields_user' ), 10, 2 );
-		add_filter( 'lostpassword_redirect', array( __CLASS__, 'filter_lostpassword_redirect' ) );
 
 		add_action( 'wp_footer', array( __CLASS__, 'remove_login_handler' ) );
 
@@ -548,31 +547,6 @@ class Init {
 	 */
 	public static function filter_show_password_fields_user( $show_password_fields, $profileuser ): bool {
 		return self::filter_show_password_fields( $show_password_fields, $profileuser->ID );
-	}
-
-	/**
-	 * Filter the redirect URL after the lost password form is submitted.
-	 *
-	 * When the lost password form is processed, WordPress redirects to
-	 * wp_login_url(), which this plugin filters to the SSO login URL. This
-	 * filter ensures the confirmation/error page is shown on wp-login.php.
-	 *
-	 * @param string $redirect_to The redirect URL built by WordPress.
-	 * @return string The corrected redirect URL pointing to wp-login.php.
-	 */
-	public static function filter_lostpassword_redirect( string $redirect_to ): string {
-		$parsed       = wp_parse_url( $redirect_to );
-		$query_params = array( 'normal' => '1' );
-
-		if ( ! empty( $parsed['query'] ) ) {
-			parse_str( $parsed['query'], $all_params );
-			// Only forward the 'checkemail' parameter that WordPress uses for this redirect.
-			if ( isset( $all_params['checkemail'] ) ) {
-				$query_params['checkemail'] = sanitize_key( $all_params['checkemail'] );
-			}
-		}
-
-		return add_query_arg( $query_params, site_url( 'wp-login.php', 'login' ) );
 	}
 
 	/**
