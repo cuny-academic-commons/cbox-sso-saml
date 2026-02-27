@@ -562,7 +562,7 @@ class Init {
 	 */
 	public static function filter_lostpassword_redirect( string $redirect_to ): string {
 		$parsed       = wp_parse_url( $redirect_to );
-		$query_params = array();
+		$query_params = array( 'normal' => '1' );
 
 		if ( ! empty( $parsed['query'] ) ) {
 			parse_str( $parsed['query'], $all_params );
