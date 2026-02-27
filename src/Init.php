@@ -34,6 +34,7 @@ class Init {
 
 		add_filter( 'allow_password_reset', array( __CLASS__, 'filter_show_password_fields' ), 10, 2 );
 		add_filter( 'show_password_fields', array( __CLASS__, 'filter_show_password_fields' ), 10, 2 );
+		add_filter( 'lostpassword_redirect', array( __CLASS__, 'filter_lostpassword_redirect' ) );
 
 		add_action( 'wp_footer', array( __CLASS__, 'remove_login_handler' ) );
 
@@ -378,12 +379,46 @@ class Init {
 	 * Appending the ?normal query parameter will allow access. This
 	 * is necessary in particular for users who have the ability to use
 	 * local WP login.
+	 *
+	 * Password reset pages are also allowed through:
+	 * - ?action=lostpassword is accessible to all users.
+	 * - ?action=rp and ?action=resetpass are accessible only to users who are
+	 *   allowed to use WP auth (?login= is checked against usermeta).
+	 * - ?checkemail=* is accessible after submitting the lost-password form.
 	 */
 	public static function redirect_wp_login(): void {
 		// POSTs are handled by the `redirect_wp_login_attempts` method.
 		if ( 'POST' === $_SERVER['REQUEST_METHOD'] ) {
 			return;
 		}
+
+		// phpcs:disable WordPress.Security.NonceVerification.Recommended
+		$action = isset( $_GET['action'] ) ? sanitize_key( $_GET['action'] ) : '';
+
+		// Allow all users to access the first step of the password reset flow.
+		if ( in_array( $action, array( 'lostpassword', 'retrievepassword' ), true ) ) {
+			return;
+		}
+
+		// Allow the "check your email" confirmation page shown after submitting the form.
+		if ( isset( $_GET['checkemail'] ) ) {
+			return;
+		}
+
+		// Allow the password reset form only for users who are permitted to use WP auth.
+		if ( in_array( $action, array( 'rp', 'resetpass' ), true ) ) {
+			$login = isset( $_GET['login'] ) ? sanitize_user( wp_unslash( $_GET['login'] ) ) : '';
+			$user  = $login ? get_user_by( 'login', $login ) : false;
+
+			if ( $user && self::user_can_use_wp_auth( $user->ID ) ) {
+				return;
+			}
+
+			// Redirect unauthorized users back to the lost password form.
+			wp_safe_redirect( add_query_arg( 'action', 'lostpassword', site_url( 'wp-login.php', 'login' ) ) );
+			exit;
+		}
+		// phpcs:enable WordPress.Security.NonceVerification.Recommended
 
 		if ( ! isset( $_GET['normal'] ) ) { // phpcs:ignore WordPress.Security.NonceVerification.Recommended
 			wp_safe_redirect( Config::login_url() );
@@ -503,6 +538,31 @@ class Init {
 		}
 
 		return false;
+	}
+
+	/**
+	 * Filter the redirect URL after the lost password form is submitted.
+	 *
+	 * When the lost password form is processed, WordPress redirects to
+	 * wp_login_url(), which this plugin filters to the SSO login URL. This
+	 * filter ensures the confirmation/error page is shown on wp-login.php.
+	 *
+	 * @param string $redirect_to The redirect URL built by WordPress.
+	 * @return string The corrected redirect URL pointing to wp-login.php.
+	 */
+	public static function filter_lostpassword_redirect( string $redirect_to ): string {
+		$parsed       = wp_parse_url( $redirect_to );
+		$query_params = array();
+
+		if ( ! empty( $parsed['query'] ) ) {
+			parse_str( $parsed['query'], $all_params );
+			// Only forward the 'checkemail' parameter that WordPress uses for this redirect.
+			if ( isset( $all_params['checkemail'] ) ) {
+				$query_params['checkemail'] = sanitize_key( $all_params['checkemail'] );
+			}
+		}
+
+		return add_query_arg( $query_params, site_url( 'wp-login.php', 'login' ) );
 	}
 
 	/**
