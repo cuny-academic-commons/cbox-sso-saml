@@ -259,6 +259,10 @@ class Init {
 
 		$auth->set_sso_authentication_cookie( $user );
 
+		// Delete the authorization cookie, to avoid multiple users signing up
+		// with this SSO info.
+		$auth->clear_sso_authorization_cookie();
+
 		remove_action( 'after_signup_user', array( __CLASS__, 'after_signup_user' ) );
 	}
 
