@@ -258,6 +258,7 @@ class Init {
 		update_user_meta( $user->ID, 'cbox_sso_saml_signup_id', $temp_signup->signup_id );
 
 		$auth->set_sso_authentication_cookie( $user );
+		$auth->clear_sso_authorization_cookie();
 
 		// Delete the authorization cookie, to avoid multiple users signing up
 		// with this SSO info.
@@ -410,12 +411,12 @@ class Init {
 		if ( isset( $_GET['checkemail'] ) ) {
 			return;
 		}
+		// phpcs:enable WordPress.Security.NonceVerification.Recommended
 
-		// Allow the password reset flow.
+		// Allow the password reset form.
 		if ( in_array( $action, array( 'rp', 'resetpass' ), true ) ) {
 			return;
 		}
-		// phpcs:enable WordPress.Security.NonceVerification.Recommended
 
 		if ( ! isset( $_GET['normal'] ) ) { // phpcs:ignore WordPress.Security.NonceVerification.Recommended
 			wp_safe_redirect( Config::login_url() );
