@@ -409,21 +409,12 @@ class Init {
 		if ( isset( $_GET['checkemail'] ) ) {
 			return;
 		}
-
-		// Allow the password reset form only for users who are permitted to use WP auth.
-		if ( in_array( $action, array( 'rp', 'resetpass' ), true ) ) {
-			$login = isset( $_GET['login'] ) ? sanitize_user( wp_unslash( $_GET['login'] ) ) : '';
-			$user  = $login ? get_user_by( 'login', $login ) : false;
-
-			if ( $user && self::user_can_use_wp_auth( $user->ID ) ) {
-				return;
-			}
-
-			// Redirect unauthorized users back to the lost password form.
-			wp_safe_redirect( add_query_arg( 'action', 'lostpassword', site_url( 'wp-login.php', 'login' ) ) );
-			exit;
-		}
 		// phpcs:enable WordPress.Security.NonceVerification.Recommended
+
+		// Allow the password reset form.
+		if ( in_array( $action, array( 'rp', 'resetpass' ), true ) ) {
+			return;
+		}
 
 		if ( ! isset( $_GET['normal'] ) ) { // phpcs:ignore WordPress.Security.NonceVerification.Recommended
 			wp_safe_redirect( Config::login_url() );
