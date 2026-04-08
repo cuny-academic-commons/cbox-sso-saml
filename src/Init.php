@@ -305,6 +305,11 @@ class Init {
 	 * @return string $login_url The default login URL.
 	 */
 	public static function filter_login_url(): string {
+		// We need a different kind of filtering on wp-login.php.
+		if ( 'wp-login.php' === basename( $_SERVER['SCRIPT_NAME'] ) ) {
+			return home_url( add_query_arg( 'normal', '1', 'wp-login.php' ) );
+		}
+
 		$login_url = Config::login_url();
 
 		$redirect_to = home_url();
