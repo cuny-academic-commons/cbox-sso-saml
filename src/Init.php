@@ -256,6 +256,7 @@ class Init {
 		update_user_meta( $user->ID, 'cbox_sso_saml_signup_id', $temp_signup->signup_id );
 
 		$auth->set_sso_authentication_cookie( $user );
+		$auth->clear_sso_authorization_cookie();
 
 		remove_action( 'after_signup_user', array( __CLASS__, 'after_signup_user' ) );
 	}
