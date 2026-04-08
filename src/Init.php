@@ -580,9 +580,12 @@ class Init {
 		?>
 		<script>
 			jQuery( document ).ready( function( $ ) {
-				document.querySelector( '#wp-admin-bar-bp-login > a' ).addEventListener( 'click', () => {
-					jQuery( '#wp-admin-bar-bp-login > a' ).off();
-				} );
+				const bpLoginLink = document.querySelector( '#wp-admin-bar-bp-login > a' );
+				if ( bpLoginLink ) {
+					bpLoginLink.addEventListener( 'click', () => {
+						jQuery( '#wp-admin-bar-bp-login > a' ).off();
+					} );
+				}
 			} );
 		</script>
 		<?php
