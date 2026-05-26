@@ -193,9 +193,10 @@ class Config {
 		$private_key = self::get_private_key();
 
 		$security = array(
-			'authnRequestsSigned'  => false,
-			'logoutRequestSigned'  => false,
-			'logoutResponseSigned' => false,
+			'authnRequestsSigned'   => false,
+			'logoutRequestSigned'   => false,
+			'logoutResponseSigned'  => false,
+			'requestedAuthnContext' => false,
 		);
 
 		if ( ! empty( $private_key ) ) {
