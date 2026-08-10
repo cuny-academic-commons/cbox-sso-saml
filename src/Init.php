@@ -136,6 +136,12 @@ class Init {
 	 */
 	public static function filter_template_part( $templates, $slug ): array {
 		switch ( $slug ) {
+			case 'parts/home/login':
+				return array(
+					'parts/home/login-sso.php',
+					'parts/home/login.php',
+				);
+
 			case 'members/register':
 				$auth = new Auth();
 
