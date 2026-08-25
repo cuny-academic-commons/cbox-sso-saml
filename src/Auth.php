@@ -235,13 +235,13 @@ class Auth {
 			}
 		}
 
-		if ( false === $this->can_register() ) {
-			$this->handle_error( __( 'User is not authorized to register.', 'cbox-sso-saml' ), 403 );
-		}
-
 		$user = $this->get_user( $user_identifier );
 
 		if ( ! $user ) {
+			if ( false === $this->can_register() ) {
+				$this->handle_error( __( 'User is not authorized to register.', 'cbox-sso-saml' ), 403 );
+			}
+
 			/**
 			 * Filters the user data for a new user being signed up via SSO.
 			 *
