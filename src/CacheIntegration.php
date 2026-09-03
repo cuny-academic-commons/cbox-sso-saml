@@ -24,6 +24,7 @@ class CacheIntegration {
 		'/sso/verify',
 		'/sso/logout',
 		'/sso/metadata.xml',
+		'/register',
 	);
 
 	/**

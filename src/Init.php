@@ -70,6 +70,10 @@ class Init {
 		$path = $path ? untrailingslashit( $path ) : '';
 		$path = strtok( $path, '?' );
 
+		if ( '/register' === $path ) {
+			nocache_headers();
+		}
+
 		if ( '/sso/login' === $path ) {
 			$redirect_to = rawurldecode( $_GET['redirect_to'] ?? home_url() ); // phpcs:ignore WordPress.Security.NonceVerification.Recommended
 
