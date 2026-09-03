@@ -18,6 +18,8 @@ class Init {
 		add_action( 'template_redirect', array( __CLASS__, 'template_redirect' ) );
 		add_filter( 'bp_get_template_part', array( __CLASS__, 'filter_template_part' ), 10, 2 );
 		add_filter( 'bp_get_template_stack', array( __CLASS__, 'filter_template_stack' ) );
+		add_action( 'bp_after_account_details_fields', array( __CLASS__, 'render_registration_token' ) );
+		add_action( 'bp_signup_pre_validate', array( __CLASS__, 'bp_signup_pre_validate' ) );
 		add_action( 'bp_signup_validate', array( __CLASS__, 'bp_signup_validate' ) );
 		add_filter( 'bp_registration_needs_activation', '__return_false' );
 		add_action( 'login_init', array( __CLASS__, 'redirect_wp_login' ) );
@@ -188,6 +190,61 @@ class Init {
 	}
 
 	/**
+	 * Render the token that binds a registration form to its SSO temporary signup.
+	 */
+	public static function render_registration_token(): void {
+		$auth   = new Auth();
+		$signup = self::get_temp_signup();
+		$token  = $signup ? $auth->get_registration_token( $signup ) : '';
+
+		if ( ! $token ) {
+			return;
+		}
+
+		printf(
+			'<input type="hidden" name="cbox_sso_saml_registration_token" value="%s">',
+			esc_attr( $token )
+		);
+	}
+
+	/**
+	 * Bind the submitted registration form to the current SSO temporary signup.
+	 *
+	 * This runs before BuddyPress validates or creates the ordinary signup record,
+	 * ensuring a form rendered for one SSO identity cannot be submitted for another.
+	 */
+	public static function bp_signup_pre_validate(): void {
+		$bp   = buddypress();
+		$auth = new Auth();
+
+		if ( ! $auth->is_sso_authorized() ) {
+			$bp->signup->errors['signup_username'] = __( 'Your SSO authorization has expired. Please sign in again before registering.', 'cbox-sso-saml' );
+			return;
+		}
+
+		$cookie_data = $auth->get_cookie_data();
+		$temp_signup = ! empty( $cookie_data['username'] ) ? $auth->get_temp_signup( $cookie_data['username'] ) : false;
+		$token       = isset( $_POST['cbox_sso_saml_registration_token'] ) ? sanitize_text_field( wp_unslash( $_POST['cbox_sso_saml_registration_token'] ) ) : ''; // phpcs:ignore WordPress.Security.NonceVerification.Missing
+
+		if ( ! $temp_signup || ! $auth->is_registration_token_valid( $temp_signup, $token ) ) {
+			$bp->signup->errors['signup_username'] = __( 'Your SSO session changed while this form was open. Please sign in again before registering.', 'cbox-sso-saml' );
+			return;
+		}
+
+		if ( Config::force_saml_registration_email_address() ) {
+			$email = $temp_signup->meta['user_email'] ?? '';
+
+			if ( ! is_email( $email ) ) {
+				$bp->signup->errors['signup_username'] = __( 'Your SSO account did not provide a valid email address. Please contact support.', 'cbox-sso-saml' );
+				return;
+			}
+
+			// BuddyPress validates and persists this value later in the same request.
+			$_POST['signup_email'] = $email;
+		}
+	}
+
+	/**
 	 * Filter BuddyPress signup validataion.
 	 */
 	public static function bp_signup_validate(): void {
@@ -200,8 +257,9 @@ class Init {
 				unset( $bp->signup->errors['signup_password'] );
 			}
 
-			// Prevent BuddyPress from validating the email field.
-			if ( Config::force_saml_email_address() && array_key_exists( 'signup_email', $bp->signup->errors ) ) {
+			// The registration email field is hidden, so display its errors beside username.
+			if ( Config::force_saml_registration_email_address() && array_key_exists( 'signup_email', $bp->signup->errors ) ) {
+				$bp->signup->errors['signup_username'] = $bp->signup->errors['signup_email'];
 				unset( $bp->signup->errors['signup_email'] );
 			}
 		}
@@ -223,7 +281,7 @@ class Init {
 
 		$cookie_data = $auth->get_cookie_data();
 
-		if ( empty( $cookie_data['username'] ) ) {
+		if ( ! $auth->is_sso_authorized() || empty( $cookie_data['username'] ) ) {
 			$auth->handle_error( __( 'Invalid cookie data.', 'cbox-sso-saml' ) );
 		}
 
@@ -234,12 +292,20 @@ class Init {
 			$auth->handle_error( __( 'No signup found for this user.', 'cbox-sso-saml' ) );
 		}
 
-		if ( Config::force_saml_email_address() ) {
-			// If the SSO email address is being used, we don't need to validate the email.
-			// The email address will be set by the SSO response.
+		$token = isset( $_POST['cbox_sso_saml_registration_token'] ) ? sanitize_text_field( wp_unslash( $_POST['cbox_sso_saml_registration_token'] ) ) : ''; // phpcs:ignore WordPress.Security.NonceVerification.Missing
+		if ( ! $auth->is_registration_token_valid( $temp_signup, $token ) ) {
+			$auth->handle_error( __( 'Your SSO session changed while this form was open. Please sign in again before registering.', 'cbox-sso-saml' ), 403 );
+		}
+
+		if ( Config::force_saml_registration_email_address() ) {
+			$email = $temp_signup->meta['user_email'] ?? '';
+			if ( ! is_email( $email ) ) {
+				$auth->handle_error( __( 'Your SSO account did not provide a valid email address. Please contact support.', 'cbox-sso-saml' ), 403 );
+			}
+
 			$wpdb->update(
 				$wpdb->signups,
-				array( 'user_email' => $user_email ),
+				array( 'user_email' => $email ),
 				array( 'activation_key' => $key )
 			);
 		}

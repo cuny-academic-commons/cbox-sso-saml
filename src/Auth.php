@@ -37,6 +37,13 @@ class Auth {
 	private $cookie_name = 'cbox_sso_saml_authorization';
 
 	/**
+	 * The temporary-signup metadata key that binds a registration form to SSO identity.
+	 *
+	 * @var string
+	 */
+	private $registration_token_meta_key = 'cbox_sso_saml_registration_token';
+
+	/**
 	 * Provide access to the Saml2 Auth object.
 	 *
 	 * @return SAML2_Auth
@@ -108,6 +115,11 @@ class Auth {
 			return false;
 		}
 
+		if ( (int) $cookie_data['expiration'] < time() ) {
+			$this->clear_sso_authorization_cookie();
+			return false;
+		}
+
 		$user = $this->get_user( $cookie_data['username'] );
 
 		if ( $user ) {
@@ -132,6 +144,35 @@ class Auth {
 		}
 
 		return true;
+	}
+
+	/**
+	 * Get the registration token associated with a temporary signup.
+	 *
+	 * @param object $signup Temporary signup object.
+	 * @return string
+	 */
+	public function get_registration_token( object $signup ): string {
+		if ( ! isset( $signup->meta ) || ! is_array( $signup->meta ) ) {
+			return '';
+		}
+
+		$token = $signup->meta[ $this->registration_token_meta_key ] ?? '';
+
+		return is_string( $token ) ? $token : '';
+	}
+
+	/**
+	 * Determine whether a form token belongs to a temporary signup.
+	 *
+	 * @param object $signup Temporary signup object.
+	 * @param string $token  Token submitted with the registration form.
+	 * @return bool
+	 */
+	public function is_registration_token_valid( object $signup, string $token ): bool {
+		$expected_token = $this->get_registration_token( $signup );
+
+		return '' !== $expected_token && '' !== $token && hash_equals( $expected_token, $token );
 	}
 
 	/**
@@ -296,6 +337,7 @@ class Auth {
 	 * Clear the SSO authorization cookie.
 	 */
 	public function clear_sso_authorization_cookie(): void {
+		setcookie( $this->cookie_name, '', time() - 3600, COOKIEPATH, COOKIE_DOMAIN, true, true );
 		setcookie( $this->cookie_name, '', time() - 3600, PLUGINS_COOKIE_PATH, COOKIE_DOMAIN, true, true );
 		setcookie( $this->cookie_name, '', time() - 3600, ADMIN_COOKIE_PATH, COOKIE_DOMAIN, true, true );
 	}
@@ -394,12 +436,24 @@ class Auth {
 	 * @return string The activation key.
 	 */
 	private function create_temp_signup( $signup_data ): string {
+		global $wpdb;
+
 		$user_login = $signup_data['user_login'] ?? '';
 
 		$signup       = $this->get_temp_signup( $user_login );
 		$existing_key = $signup ? $signup->activation_key : '';
 
 		if ( $existing_key ) {
+			if ( ! $this->get_registration_token( $signup ) ) {
+				$signup->meta[ $this->registration_token_meta_key ] = wp_generate_password( 64, false, false );
+
+				$wpdb->update(
+					$wpdb->signups,
+					array( 'meta' => maybe_serialize( $signup->meta ) ),
+					array( 'signup_id' => $signup->signup_id )
+				);
+			}
+
 			return $existing_key;
 		}
 
@@ -411,7 +465,8 @@ class Auth {
 		$meta = array_merge(
 			$signup_data['meta'] ?? array(),
 			array(
-				'user_email' => $signup_data['user_email'] ?? '',
+				'user_email'                       => $signup_data['user_email'] ?? '',
+				$this->registration_token_meta_key => wp_generate_password( 64, false, false ),
 			)
 		);
 

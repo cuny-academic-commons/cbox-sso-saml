@@ -69,6 +69,21 @@ class Config {
 	}
 
 	/**
+	 * Determines whether to force the use of the SAML email address during registration.
+	 *
+	 * This may be enabled independently of force_saml_email_address() when SSO users
+	 * should be able to change their email addresses after registration.
+	 *
+	 * @return bool
+	 */
+	public static function force_saml_registration_email_address(): bool {
+		return apply_filters(
+			'cbox_sso_saml_force_saml_registration_email_address',
+			self::force_saml_email_address()
+		);
+	}
+
+	/**
 	 * Provide the X.509 certificate used to verify SAML responses.
 	 *
 	 * @return string

@@ -279,6 +279,7 @@ The most commonly used filters are:
 - `cbox_sso_saml_private_key`
 - `cbox_sso_saml_security_settings`
 - `cbox_sso_saml_saml_settings`
+- `cbox_sso_saml_force_saml_registration_email_address`
 
 ### Example: load secrets and metadata from environment variables
 
